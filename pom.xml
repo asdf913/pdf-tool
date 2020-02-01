@@ -75,6 +75,6 @@
 		</plugins>
 	</build>
 	<modules>
-		<module>pdf-writer</module>
+		<module>pdf-text-writer</module>
 	</modules>
 </project>
