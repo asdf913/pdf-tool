@@ -21,6 +21,7 @@
 					value="#{new net.miginfocom.swing.MigLayout()}" />
 				<property name="defaultCloseOperation"
 					value="#{T(javax.swing.JFrame).EXIT_ON_CLOSE}" />
+				<property name="title" value="${frame.title}" />
 			</bean>
 		</property>
 		<!-- fontName -->
