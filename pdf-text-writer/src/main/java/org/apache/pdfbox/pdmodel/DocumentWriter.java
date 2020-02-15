@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -130,6 +131,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private String pageSize = null;
 
+	private String ownerPassword = null;
+
 	private DocumentWriter() {
 	}
 
@@ -159,6 +162,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	public void setColor(final Color color) {
 		this.color = color;
+	}
+
+	public void setOwnerPassword(final String ownerPassword) {
+		this.ownerPassword = ownerPassword;
 	}
 
 	@Override
@@ -234,6 +241,26 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			setForeground(tfText, color);
 		}
 		//
+		accept(ownerPassword, Arrays.asList(pfOwner1::setText, pfOwner2::setText));
+		//
+	}
+
+	private static <T> void accept(final T value, final Iterable<Consumer<T>> consumers) {
+		//
+		if (consumers != null) {
+			//
+			for (final Consumer<T> consumer : consumers) {
+				//
+				if (consumer == null) {
+					continue;
+				} // skip null
+					//
+				consumer.accept(value);
+				//
+			} // for
+				//
+		} // if
+			//
 	}
 
 	private static boolean containsKey(final Map<?, ?> instance, final Object key) {
