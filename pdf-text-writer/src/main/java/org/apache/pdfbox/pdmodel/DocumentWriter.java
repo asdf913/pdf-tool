@@ -24,6 +24,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EventObject;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +84,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private AbstractButton btnColor, btnProperties, btnPermission, btnExecute, btnCopy = null;
 
-	private ComboBoxModel<Object> pageSize = null;
+	private ComboBoxModel<Object> cbPageSize = null;
 
 	private Map<String, PDRectangle> pageSizeMap = null;
 
@@ -127,6 +128,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private Integer margin = null;
 
+	private String pageSize = null;
+
 	private DocumentWriter() {
 	}
 
@@ -150,6 +153,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		this.margin = margin;
 	}
 
+	public void setPageSize(final String pageSize) {
+		this.pageSize = pageSize;
+	}
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		init(jFrame);
@@ -163,9 +170,12 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		add(container, label);
 		add(container,
-				new JComboBox<>(pageSize = new DefaultComboBoxModel<>(
+				new JComboBox<>(cbPageSize = new DefaultComboBoxModel<>(
 						ArrayUtils.insert(0, (pageSizeMap = getPageSizeMap()).keySet().toArray(), (Object) null))),
 				wrap);
+		if (containsKey(pageSizeMap, pageSize)) {
+			cbPageSize.setSelectedItem(pageSize);
+		}
 		//
 		add(container, new JLabel("Font size"));
 		add(container, tfFontSize = new JTextField(toString(fontSize)), wrap);
@@ -175,7 +185,6 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		add(container, new JLabel("Font"));
 		final PDFont[] fonts = getFonts();
-		//
 		add(container, new JComboBox<>(font = new DefaultComboBoxModel<>(ArrayUtils.insert(0, fonts, (PDFont) null))),
 				wrap);
 		font.setSelectedItem(Iterables.getFirst(
@@ -217,6 +226,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		setWidth(width, tfFontSize, tfMargin, tfText);
 		setWidth((int) (width - getWidth(getPreferredSize(label), 0) * 3) / 2, pfOwner1, pfOwner2, pfUser1, pfUser2);
 		//
+	}
+
+	private static boolean containsKey(final Map<?, ?> instance, final Object key) {
+		return instance != null && instance.containsKey(key);
 	}
 
 	private static <T> Stream<T> stream(final T[] instance) {
@@ -368,7 +381,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 	@Override
 	public void actionPerformed(final ActionEvent evt) {
 		//
-		final Object source = evt != null ? evt.getSource() : null;
+		final Object source = getSource(evt);
 		//
 		if (Objects.deepEquals(source, btnExecute)) {
 			//
@@ -390,7 +403,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				return;
 			}
 			//
-			final PDRectangle pageSize = cast(PDRectangle.class, get(pageSizeMap, getSelectedItem(this.pageSize)));
+			final PDRectangle pageSize = cast(PDRectangle.class, get(pageSizeMap, getSelectedItem(this.cbPageSize)));
 			final PDPage page = pageSize != null ? new PDPage(pageSize) : new PDPage();
 			final PDDocument document = new PDDocument();
 			//
@@ -483,6 +496,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 		}
 		//
+	}
+
+	private static Object getSource(final EventObject instance) {
+		return instance != null ? instance.getSource() : null;
 	}
 
 	private static void pack(final Window instance) {

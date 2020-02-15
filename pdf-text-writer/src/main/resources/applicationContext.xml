@@ -31,6 +31,8 @@
 		<!-- margin -->
 		<property name="margin"
 			value="#{T(java.lang.Math).max(T(org.apache.commons.lang3.math.NumberUtils).toInt(${margin},0),1)}" />
+		<!-- pageSize -->
+		<property name="pageSize" value="${pageSize}" />
 	</bean>
 
 </beans>

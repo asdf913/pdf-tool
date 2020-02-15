@@ -14,6 +14,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EventObject;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -55,7 +56,8 @@ class DocumentWriterTest {
 			METHOD_TEST_AND_GET3, METHOD_GET_FOREGROUND, METHOD_VALUE_OF, METHOD_GET, METHOD_GET_SELECTED_ITEM,
 			METHOD_SET_WIDTH, METHOD_GET_TEXT, METHOD_CREATE_ACCESS_PERMISSION, METHOD_SET_ACCESSIBLE, METHOD_TO_LINES,
 			METHOD_CHECK_PASSWORD, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_CREATE_PROPERTIES_DIALOG,
-			METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM, METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME = null;
+			METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM, METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME,
+			METHOD_CONTAINS_KEY, METHOD_GET_SOURCE = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -122,6 +124,10 @@ class DocumentWriterTest {
 		(METHOD_COLLECT = clz.getDeclaredMethod("collect", Stream.class, Collector.class)).setAccessible(true);
 		//
 		(METHOD_GET_NAME = clz.getDeclaredMethod("getName", PDFontLike.class)).setAccessible(true);
+		//
+		(METHOD_CONTAINS_KEY = clz.getDeclaredMethod("containsKey", Map.class, Object.class)).setAccessible(true);
+		//
+		(METHOD_GET_SOURCE = clz.getDeclaredMethod("getSource", EventObject.class)).setAccessible(true);
 		//
 	}
 
@@ -729,6 +735,39 @@ class DocumentWriterTest {
 				return (String) obj;
 			}
 			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testContainsKey() throws Throwable {
+		//
+		Assertions.assertFalse(containsKey(null, null));
+		Assertions.assertTrue(containsKey(Collections.singletonMap(OWNER_PASSWORD, null), OWNER_PASSWORD));
+		//
+	}
+
+	private static boolean containsKey(final Map<?, ?> instance, final Object key) throws Throwable {
+		try {
+			final Object obj = METHOD_CONTAINS_KEY.invoke(null, instance, key);
+			if (obj instanceof Boolean) {
+				return ((Boolean) obj).booleanValue();
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetSource() throws Throwable {
+		Assertions.assertNull(getSource(null));
+	}
+
+	private static Object getSource(final EventObject instance) throws Throwable {
+		try {
+			return METHOD_GET_SOURCE.invoke(null, instance);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
