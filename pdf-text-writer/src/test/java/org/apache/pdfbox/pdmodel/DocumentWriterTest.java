@@ -57,7 +57,7 @@ class DocumentWriterTest {
 			METHOD_SET_WIDTH, METHOD_GET_TEXT, METHOD_CREATE_ACCESS_PERMISSION, METHOD_SET_ACCESSIBLE, METHOD_TO_LINES,
 			METHOD_CHECK_PASSWORD, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_CREATE_PROPERTIES_DIALOG,
 			METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM, METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME,
-			METHOD_CONTAINS_KEY, METHOD_GET_SOURCE = null;
+			METHOD_CONTAINS_KEY, METHOD_GET_SOURCE, METHOD_SET_FORE_GROUND = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -128,6 +128,9 @@ class DocumentWriterTest {
 		(METHOD_CONTAINS_KEY = clz.getDeclaredMethod("containsKey", Map.class, Object.class)).setAccessible(true);
 		//
 		(METHOD_GET_SOURCE = clz.getDeclaredMethod("getSource", EventObject.class)).setAccessible(true);
+		//
+		(METHOD_SET_FORE_GROUND = clz.getDeclaredMethod("setForeground", Component.class, Color.class))
+				.setAccessible(true);
 		//
 	}
 
@@ -768,6 +771,22 @@ class DocumentWriterTest {
 	private static Object getSource(final EventObject instance) throws Throwable {
 		try {
 			return METHOD_GET_SOURCE.invoke(null, instance);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetForeground() {
+		//
+		Assertions.assertDoesNotThrow(() -> setForeground(null, null));
+		Assertions.assertDoesNotThrow(() -> setForeground(new JTextField(), null));
+		//
+	}
+
+	private static void setForeground(final Component instance, final Color color) throws Throwable {
+		try {
+			METHOD_SET_FORE_GROUND.invoke(null, instance, color);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

@@ -33,6 +33,12 @@
 			value="#{T(java.lang.Math).max(T(org.apache.commons.lang3.math.NumberUtils).toInt(${margin},0),1)}" />
 		<!-- pageSize -->
 		<property name="pageSize" value="${pageSize}" />
+		<!-- color -->
+		<property name="color">
+			<bean class="org.springframework.beans.factory.ColorFactoryBean">
+				<property name="name" value="${color}" />
+			</bean>
+		</property>
 	</bean>
 
 </beans>

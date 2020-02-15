@@ -157,6 +157,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		this.pageSize = pageSize;
 	}
 
+	public void setColor(final Color color) {
+		this.color = color;
+	}
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		init(jFrame);
@@ -225,6 +229,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		setWidth(width - (int) getPreferredSize(btnCopy).getWidth(), tfFile);
 		setWidth(width, tfFontSize, tfMargin, tfText);
 		setWidth((int) (width - getWidth(getPreferredSize(label), 0) * 3) / 2, pfOwner1, pfOwner2, pfUser1, pfUser2);
+		//
+		if (color != null) {
+			setForeground(tfText, color);
+		}
 		//
 	}
 
@@ -478,7 +486,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 		} else if (Objects.deepEquals(source, btnColor)) {
 			//
-			tfText.setForeground(color = JColorChooser.showDialog(null, "Font color", null));
+			setForeground(tfText, color = JColorChooser.showDialog(null, "Font color", color));
 			//
 		} else if (Objects.deepEquals(source, btnProperties)) {
 			//
@@ -496,6 +504,12 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 		}
 		//
+	}
+
+	private static void setForeground(final Component instance, final Color color) {
+		if (instance != null) {
+			instance.setForeground(color);
+		}
 	}
 
 	private static Object getSource(final EventObject instance) {
