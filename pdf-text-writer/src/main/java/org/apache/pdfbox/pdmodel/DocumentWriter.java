@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -135,6 +136,18 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private String userPassword = null;
 
+	private String title = null;
+
+	private String author = null;
+
+	private String subject = null;
+
+	private String keywords = null;
+
+	private String creator = null;
+
+	private String assembleDocument = null;
+
 	private DocumentWriter() {
 	}
 
@@ -172,6 +185,30 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	public void setUserPassword(final String userPassword) {
 		this.userPassword = userPassword;
+	}
+
+	public void setTitle(final String title) {
+		this.title = title;
+	}
+
+	public void setAuthor(final String author) {
+		this.author = author;
+	}
+
+	public void setSubject(final String subject) {
+		this.subject = subject;
+	}
+
+	public void setKeywords(final String keywords) {
+		this.keywords = keywords;
+	}
+
+	public void setCreator(final String creator) {
+		this.creator = creator;
+	}
+
+	public void setAssembleDocument(final String assembleDocument) {
+		this.assembleDocument = assembleDocument;
 	}
 
 	@Override
@@ -569,19 +606,19 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		dialog.setLayout(new MigLayout());
 		//
 		add(dialog, new JLabel("Title"));
-		add(dialog, tfTitle = ObjectUtils.defaultIfNull(tfTitle, new JTextField()), WRAP);
+		add(dialog, tfTitle = ObjectUtils.defaultIfNull(tfTitle, new JTextField(title)), WRAP);
 		//
 		add(dialog, new JLabel("Author"));
-		add(dialog, tfAuthor = ObjectUtils.defaultIfNull(tfAuthor, new JTextField()), WRAP);
+		add(dialog, tfAuthor = ObjectUtils.defaultIfNull(tfAuthor, new JTextField(author)), WRAP);
 		//
 		add(dialog, new JLabel("Subject"));
-		add(dialog, tfSubject = ObjectUtils.defaultIfNull(tfSubject, new JTextField()), WRAP);
+		add(dialog, tfSubject = ObjectUtils.defaultIfNull(tfSubject, new JTextField(subject)), WRAP);
 		//
 		add(dialog, new JLabel("Keywords"));
-		add(dialog, tfKeywords = ObjectUtils.defaultIfNull(tfKeywords, new JTextField()), WRAP);
+		add(dialog, tfKeywords = ObjectUtils.defaultIfNull(tfKeywords, new JTextField(keywords)), WRAP);
 		//
 		add(dialog, new JLabel("Creator"));
-		add(dialog, tfCreator = ObjectUtils.defaultIfNull(tfCreator, new JTextField()), WRAP);
+		add(dialog, tfCreator = ObjectUtils.defaultIfNull(tfCreator, new JTextField(creator)), WRAP);
 		//
 		setWidth(200, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator);
 		//
@@ -599,9 +636,16 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		final Boolean[] booleans = new Boolean[] { null, Boolean.FALSE, Boolean.TRUE };
 		//
+		JComboBox<Boolean> cb = new JComboBox<>();
+		//
+		final boolean first = canAssembleDocument == null;
+		//
 		add(dialog, new JLabel("Assemble Document"));
-		add(dialog, new JComboBox<>(canAssembleDocument = testAndGet(notNull, canAssembleDocument,
+		add(dialog, cb = new JComboBox<>(canAssembleDocument = testAndGet(notNull, canAssembleDocument,
 				() -> new DefaultComboBoxModel<>(booleans))), WRAP);
+		if (first) {
+			cb.setSelectedItem(valueOf(assembleDocument, null));
+		}
 		//
 		add(dialog, new JLabel("Extract Content"));
 		add(dialog, new JComboBox<>(
@@ -641,6 +685,23 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		return dialog;
 		//
+	}
+
+	private static Boolean valueOf(final String value, final Boolean defaultValue) {
+		return testAndApply(value, StringUtils::isNotEmpty, Boolean::valueOf, defaultValue);
+	}
+
+	private static <T, R> R testAndApply(final T value, final Predicate<T> predicate, final Function<T, R> function,
+			final R defaultValue) {
+		return test(predicate, value) ? apply(function, value, defaultValue) : defaultValue;
+	}
+
+	private static <T> boolean test(final Predicate<T> instance, final T value) {
+		return instance != null && instance.test(value);
+	}
+
+	private static <T, R> R apply(final Function<T, R> instance, final T t, final R defaultValue) {
+		return instance != null ? instance.apply(t) : defaultValue;
 	}
 
 	private static <T> T testAndGet(final Predicate<Object> predicate, final T value, final Supplier<T> supplier) {
@@ -781,7 +842,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		T item = null;
 		//
 		for (int i = 0; items != null && i < items.length && predicate != null; i++) {
-			if (predicate.test(item = items[i])) {
+			if (test(predicate, item = items[i])) {
 				return item;
 			}
 		} // for

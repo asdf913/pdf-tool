@@ -58,7 +58,7 @@ class DocumentWriterTest {
 			METHOD_SET_WIDTH, METHOD_GET_TEXT, METHOD_CREATE_ACCESS_PERMISSION, METHOD_SET_ACCESSIBLE, METHOD_TO_LINES,
 			METHOD_CHECK_PASSWORD, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_CREATE_PROPERTIES_DIALOG,
 			METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM, METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME,
-			METHOD_CONTAINS_KEY, METHOD_GET_SOURCE, METHOD_SET_FORE_GROUND, METHOD_ACCEPT = null;
+			METHOD_CONTAINS_KEY, METHOD_GET_SOURCE, METHOD_SET_FORE_GROUND, METHOD_ACCEPT, METHOD_TEST_AND_APPLY = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -134,6 +134,9 @@ class DocumentWriterTest {
 				.setAccessible(true);
 		//
 		(METHOD_ACCEPT = clz.getDeclaredMethod("accept", Object.class, Iterable.class)).setAccessible(true);
+		//
+		(METHOD_TEST_AND_APPLY = clz.getDeclaredMethod("testAndApply", Object.class, Predicate.class, Function.class,
+				Object.class)).setAccessible(true);
 		//
 	}
 
@@ -806,6 +809,25 @@ class DocumentWriterTest {
 	private static <T> void accept(final T value, final Iterable<Consumer<T>> consumers) throws Throwable {
 		try {
 			METHOD_ACCEPT.invoke(null, value, consumers);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testTestAndApply() throws Throwable {
+		//
+		Assertions.assertNull(testAndApply(null, null, null, null));
+		Assertions.assertSame(OWNER_PASSWORD, testAndApply(null, null, null, OWNER_PASSWORD));
+		Assertions.assertSame(OWNER_PASSWORD, testAndApply(null, Predicates.alwaysTrue(), null, OWNER_PASSWORD));
+		Assertions.assertNull(testAndApply(null, Predicates.alwaysTrue(), a -> null, OWNER_PASSWORD));
+		//
+	}
+
+	private static <T, R> R testAndApply(final T value, final Predicate<T> predicate, final Function<T, R> function,
+			final R defaultValue) throws Throwable {
+		try {
+			return (R) METHOD_TEST_AND_APPLY.invoke(null, value, predicate, function, defaultValue);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
