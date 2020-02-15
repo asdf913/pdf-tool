@@ -258,7 +258,12 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
+		//
 		init(jFrame);
+		//
+		createPropertiesDialog();
+		createPermissionDialog();
+		//
 	}
 
 	private void init(final Container container) {
@@ -511,7 +516,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		final Object source = getSource(evt);
 		//
-		if (Objects.deepEquals(source, btnExecute)) {
+		if (Objects.equals(source, btnExecute)) {
 			//
 			final PDFont font = cast(PDFont.class, getSelectedItem(this.font));
 			if (font == null) {
@@ -561,6 +566,9 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				} // for
 					//
 				contentStream.endText();
+				//
+				contentStream.addComment("COMMENT 1");
+				//
 				contentStream.close();
 				//
 				final PDDocumentInformation documentInformation = document.getDocumentInformation();
@@ -596,7 +604,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				IOUtils.closeQuietly(document);
 			}
 			//
-		} else if (Objects.deepEquals(source, btnCopy)) {
+		} else if (Objects.equals(source, btnCopy)) {
 			//
 			final Toolkit toolkit = Toolkit.getDefaultToolkit();
 			final Clipboard clipboard = toolkit != null ? toolkit.getSystemClipboard() : null;
@@ -604,18 +612,18 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				clipboard.setContents(new StringSelection(getText(tfFile)), null);
 			}
 			//
-		} else if (Objects.deepEquals(source, btnColor)) {
+		} else if (Objects.equals(source, btnColor)) {
 			//
 			setForeground(tfText, color = JColorChooser.showDialog(null, "Font color", color));
 			//
-		} else if (Objects.deepEquals(source, btnProperties)) {
+		} else if (Objects.equals(source, btnProperties)) {
 			//
 			final JDialog dialog = createPropertiesDialog();
 			//
 			pack(dialog);
 			setVisible(dialog, true);
 			//
-		} else if (Objects.deepEquals(source, btnPermission)) {
+		} else if (Objects.equals(source, btnPermission)) {
 			//
 			final JDialog dialog = createPermissionDialog();
 			//
