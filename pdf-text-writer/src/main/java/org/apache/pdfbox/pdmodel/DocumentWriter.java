@@ -133,6 +133,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private String ownerPassword = null;
 
+	private String userPassword = null;
+
 	private DocumentWriter() {
 	}
 
@@ -166,6 +168,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	public void setOwnerPassword(final String ownerPassword) {
 		this.ownerPassword = ownerPassword;
+	}
+
+	public void setUserPassword(final String userPassword) {
+		this.userPassword = userPassword;
 	}
 
 	@Override
@@ -242,6 +248,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		}
 		//
 		accept(ownerPassword, Arrays.asList(pfOwner1::setText, pfOwner2::setText));
+		accept(userPassword, Arrays.asList(pfUser1::setText, pfUser2::setText));
 		//
 	}
 
