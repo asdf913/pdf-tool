@@ -76,5 +76,6 @@
 	</build>
 	<modules>
 		<module>pdf-text-writer</module>
+		<module>pdf-image-writer</module>
 	</modules>
 </project>
