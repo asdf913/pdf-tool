@@ -135,6 +135,16 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private String userPassword = null;
 
+	private String title = null;
+
+	private String author = null;
+
+	private String subject = null;
+
+	private String keywords = null;
+
+	private String creator = null;
+
 	private DocumentWriter() {
 	}
 
@@ -172,6 +182,26 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	public void setUserPassword(final String userPassword) {
 		this.userPassword = userPassword;
+	}
+
+	public void setTitle(final String title) {
+		this.title = title;
+	}
+
+	public void setAuthor(final String author) {
+		this.author = author;
+	}
+
+	public void setSubject(final String subject) {
+		this.subject = subject;
+	}
+
+	public void setKeywords(final String keywords) {
+		this.keywords = keywords;
+	}
+
+	public void setCreator(final String creator) {
+		this.creator = creator;
 	}
 
 	@Override
@@ -569,19 +599,19 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		dialog.setLayout(new MigLayout());
 		//
 		add(dialog, new JLabel("Title"));
-		add(dialog, tfTitle = ObjectUtils.defaultIfNull(tfTitle, new JTextField()), WRAP);
+		add(dialog, tfTitle = ObjectUtils.defaultIfNull(tfTitle, new JTextField(title)), WRAP);
 		//
 		add(dialog, new JLabel("Author"));
-		add(dialog, tfAuthor = ObjectUtils.defaultIfNull(tfAuthor, new JTextField()), WRAP);
+		add(dialog, tfAuthor = ObjectUtils.defaultIfNull(tfAuthor, new JTextField(author)), WRAP);
 		//
 		add(dialog, new JLabel("Subject"));
-		add(dialog, tfSubject = ObjectUtils.defaultIfNull(tfSubject, new JTextField()), WRAP);
+		add(dialog, tfSubject = ObjectUtils.defaultIfNull(tfSubject, new JTextField(subject)), WRAP);
 		//
 		add(dialog, new JLabel("Keywords"));
-		add(dialog, tfKeywords = ObjectUtils.defaultIfNull(tfKeywords, new JTextField()), WRAP);
+		add(dialog, tfKeywords = ObjectUtils.defaultIfNull(tfKeywords, new JTextField(keywords)), WRAP);
 		//
 		add(dialog, new JLabel("Creator"));
-		add(dialog, tfCreator = ObjectUtils.defaultIfNull(tfCreator, new JTextField()), WRAP);
+		add(dialog, tfCreator = ObjectUtils.defaultIfNull(tfCreator, new JTextField(creator)), WRAP);
 		//
 		setWidth(200, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator);
 		//

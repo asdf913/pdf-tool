@@ -44,6 +44,12 @@
 		<property name="ownerPassword" value="${ownerPassword}" />
 		<!-- userPassword -->
 		<property name="userPassword" value="${userPassword}" />
+		<!-- properties -->
+		<property name="title" value="${title}" />
+		<property name="author" value="${author}" />
+		<property name="subject" value="${subject}" />
+		<property name="keywords" value="${keywords}" />
+		<property name="creator" value="${creator}" />
 	</bean>
 
 </beans>
