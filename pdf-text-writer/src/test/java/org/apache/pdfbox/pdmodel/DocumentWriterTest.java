@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.EventObject;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -28,6 +29,7 @@ import javax.swing.AbstractButton;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JTextField;
@@ -58,7 +60,8 @@ class DocumentWriterTest {
 			METHOD_SET_WIDTH, METHOD_GET_TEXT, METHOD_CREATE_ACCESS_PERMISSION, METHOD_SET_ACCESSIBLE, METHOD_TO_LINES,
 			METHOD_CHECK_PASSWORD, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_CREATE_PROPERTIES_DIALOG,
 			METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM, METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME,
-			METHOD_CONTAINS_KEY, METHOD_GET_SOURCE, METHOD_SET_FORE_GROUND, METHOD_ACCEPT, METHOD_TEST_AND_APPLY = null;
+			METHOD_CONTAINS_KEY, METHOD_GET_SOURCE, METHOD_SET_FORE_GROUND, METHOD_ACCEPT, METHOD_TEST_AND_APPLY,
+			METHOD_GET_KEY, METHOD_GET_VALUE, METHOD_SET_SELECTED_ITEM, METHOD_FOR_EACH = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -137,6 +140,15 @@ class DocumentWriterTest {
 		//
 		(METHOD_TEST_AND_APPLY = clz.getDeclaredMethod("testAndApply", Object.class, Predicate.class, Function.class,
 				Object.class)).setAccessible(true);
+		//
+		(METHOD_GET_KEY = clz.getDeclaredMethod("getKey", Entry.class)).setAccessible(true);
+		//
+		(METHOD_GET_VALUE = clz.getDeclaredMethod("getValue", Entry.class)).setAccessible(true);
+		//
+		(METHOD_SET_SELECTED_ITEM = clz.getDeclaredMethod("setSelectedItem", JComboBox.class, Object.class))
+				.setAccessible(true);
+		//
+		(METHOD_FOR_EACH = clz.getDeclaredMethod("forEach", Stream.class, Consumer.class)).setAccessible(true);
 		//
 	}
 
@@ -828,6 +840,58 @@ class DocumentWriterTest {
 			final R defaultValue) throws Throwable {
 		try {
 			return (R) METHOD_TEST_AND_APPLY.invoke(null, value, predicate, function, defaultValue);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetKey() throws Throwable {
+		Assertions.assertNull(getKey(null));
+	}
+
+	private static <K> K getKey(final Entry<K, ?> instance) throws Throwable {
+		try {
+			return (K) METHOD_GET_KEY.invoke(null, instance);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetValue() throws Throwable {
+		Assertions.assertNull(getValue(null));
+	}
+
+	private static <V> V getValue(final Entry<?, V> instance) throws Throwable {
+		try {
+			return (V) METHOD_GET_VALUE.invoke(null, instance);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetSelectedItem() {
+		Assertions.assertDoesNotThrow(() -> setSelectedItem(null, null));
+	}
+
+	private static void setSelectedItem(final JComboBox<?> instance, final Object selectedItem) throws Throwable {
+		try {
+			METHOD_SET_SELECTED_ITEM.invoke(null, instance, selectedItem);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testForEach() {
+		Assertions.assertDoesNotThrow(() -> forEach(Stream.of(), null));
+	}
+
+	private static <T> void forEach(final Stream<T> instance, Consumer<? super T> action) throws Throwable {
+		try {
+			METHOD_FOR_EACH.invoke(null, instance, action);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

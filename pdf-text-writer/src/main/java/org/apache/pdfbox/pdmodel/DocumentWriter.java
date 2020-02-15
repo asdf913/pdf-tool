@@ -23,12 +23,15 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EventObject;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -148,6 +151,20 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private String assembleDocument = null;
 
+	private String extractContent = null;
+
+	private String extractForAccessibility = null;
+
+	private String fillInForm = null;
+
+	private String modify = null;
+
+	private String modifyAnnotations = null;
+
+	private String print = null;
+
+	private String printDegraded = null;
+
 	private DocumentWriter() {
 	}
 
@@ -209,6 +226,34 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	public void setAssembleDocument(final String assembleDocument) {
 		this.assembleDocument = assembleDocument;
+	}
+
+	public void setExtractContent(final String extractContent) {
+		this.extractContent = extractContent;
+	}
+
+	public void setExtractForAccessibility(final String extractForAccessibility) {
+		this.extractForAccessibility = extractForAccessibility;
+	}
+
+	public void setFillInForm(final String fillInForm) {
+		this.fillInForm = fillInForm;
+	}
+
+	public void setModify(final String modify) {
+		this.modify = modify;
+	}
+
+	public void setModifyAnnotations(final String modifyAnnotations) {
+		this.modifyAnnotations = modifyAnnotations;
+	}
+
+	public void setPrint(final String print) {
+		this.print = print;
+	}
+
+	public void setPrintDegraded(final String printDegraded) {
+		this.printDegraded = printDegraded;
 	}
 
 	@Override
@@ -313,6 +358,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private static <T> Stream<T> stream(final T[] instance) {
 		return instance != null ? Arrays.stream(instance) : null;
+	}
+
+	private static <T> Stream<T> stream(final Collection<T> instance) {
+		return instance != null ? instance.stream() : null;
 	}
 
 	private static <T> Stream<T> filter(final Stream<T> instance, final Predicate<? super T> predicate) {
@@ -425,7 +474,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				if (result == null) {
 					result = new LinkedHashMap<>();
 				}
-				result.put(f.getName(), pdRectangle);
+				put(result, f.getName(), pdRectangle);
 				//
 			} catch (final IllegalAccessException e) {
 				LOG.severe(e.getMessage());
@@ -636,55 +685,89 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		final Boolean[] booleans = new Boolean[] { null, Boolean.FALSE, Boolean.TRUE };
 		//
-		JComboBox<Boolean> cb = new JComboBox<>();
-		//
-		final boolean first = canAssembleDocument == null;
+		final Map<JComboBox<?>, Boolean> initMap = canAssembleDocument == null ? new LinkedHashMap<>() : null;
+		JComboBox<Boolean> cb = null;
 		//
 		add(dialog, new JLabel("Assemble Document"));
 		add(dialog, cb = new JComboBox<>(canAssembleDocument = testAndGet(notNull, canAssembleDocument,
 				() -> new DefaultComboBoxModel<>(booleans))), WRAP);
-		if (first) {
-			cb.setSelectedItem(valueOf(assembleDocument, null));
-		}
+		put(initMap, cb, valueOf(assembleDocument, null));
 		//
 		add(dialog, new JLabel("Extract Content"));
-		add(dialog, new JComboBox<>(
+		add(dialog, cb = new JComboBox<>(
 				canExtractContent = testAndGet(notNull, canExtractContent, () -> new DefaultComboBoxModel<>(booleans))),
 				WRAP);
+		put(initMap, cb, valueOf(extractContent, null));
 		//
 		add(dialog, new JLabel("Extract For Accessibility"));
-		add(dialog, new JComboBox<>(canExtractForAccessibility = testAndGet(notNull, canExtractForAccessibility,
+		add(dialog, cb = new JComboBox<>(canExtractForAccessibility = testAndGet(notNull, canExtractForAccessibility,
 				() -> new DefaultComboBoxModel<>(booleans))), WRAP);
+		put(initMap, cb, valueOf(extractForAccessibility, null));
 		//
 		add(dialog, new JLabel("Fill In Form"));
 		add(dialog,
-				new JComboBox<>(
+				cb = new JComboBox<>(
 						canFillInForm = testAndGet(notNull, canFillInForm, () -> new DefaultComboBoxModel<>(booleans))),
 				WRAP);
+		put(initMap, cb, valueOf(fillInForm, null));
 		//
 		add(dialog, new JLabel("Modify"));
-		add(dialog,
-				new JComboBox<>(canModify = testAndGet(notNull, canModify, () -> new DefaultComboBoxModel<>(booleans))),
-				WRAP);
+		add(dialog, cb = new JComboBox<>(
+				canModify = testAndGet(notNull, canModify, () -> new DefaultComboBoxModel<>(booleans))), WRAP);
+		put(initMap, cb, valueOf(modify, null));
 		//
 		add(dialog, new JLabel("Modify Annotations"));
-		add(dialog, new JComboBox<>(canModifyAnnotations = testAndGet(notNull, canModifyAnnotations,
+		add(dialog, cb = new JComboBox<>(canModifyAnnotations = testAndGet(notNull, canModifyAnnotations,
 				() -> new DefaultComboBoxModel<>(booleans))), WRAP);
+		put(initMap, cb, valueOf(modifyAnnotations, null));
 		//
 		add(dialog, new JLabel("Print"));
-		add(dialog,
-				new JComboBox<>(canPrint = testAndGet(notNull, canPrint, () -> new DefaultComboBoxModel<>(booleans))),
-				WRAP);
+		add(dialog, cb = new JComboBox<>(
+				canPrint = testAndGet(notNull, canPrint, () -> new DefaultComboBoxModel<>(booleans))), WRAP);
+		put(initMap, cb, valueOf(print, null));
 		//
 		add(dialog, new JLabel("Print Degraded"));
-		add(dialog, new JComboBox<>(
+		add(dialog, cb = new JComboBox<>(
 				canPrintDegraded = testAndGet(notNull, canPrintDegraded, () -> new DefaultComboBoxModel<>(booleans))),
 				WRAP);
+		put(initMap, cb, valueOf(printDegraded, null));
 		//
 		setWidth(200, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator);
 		//
+		forEach(stream(entrySet(initMap)), entry -> setSelectedItem(getKey(entry), getValue(entry)));
+		//
 		return dialog;
 		//
+	}
+
+	private static <K> K getKey(final Entry<K, ?> instance) {
+		return instance != null ? instance.getKey() : null;
+	}
+
+	private static <V> V getValue(final Entry<?, V> instance) {
+		return instance != null ? instance.getValue() : null;
+	}
+
+	private static void setSelectedItem(final JComboBox<?> instance, final Object selectedItem) {
+		if (instance != null) {
+			instance.setSelectedItem(selectedItem);
+		}
+	}
+
+	private static <T> void forEach(final Stream<T> instance, final Consumer<? super T> action) {
+		if (instance != null && action != null) {
+			instance.forEach(action);
+		}
+	}
+
+	private static <K, V> Set<Map.Entry<K, V>> entrySet(final Map<K, V> instance) {
+		return instance != null ? instance.entrySet() : null;
+	}
+
+	private static <K, V> void put(final Map<K, V> instance, final K key, final V value) {
+		if (instance != null) {
+			instance.put(key, value);
+		}
 	}
 
 	private static Boolean valueOf(final String value, final Boolean defaultValue) {

@@ -52,6 +52,15 @@
 		<property name="creator" value="${creator}" />
 		<!-- permission -->
 		<property name="assembleDocument" value="${assembleDocument}" />
+		<property name="extractContent" value="${extractContent}" />
+		<property name="extractForAccessibility"
+			value="${extractForAccessibility}" />
+		<property name="fillInForm" value="${fillInForm}" />
+		<property name="modify" value="${modify}" />
+		<property name="modifyAnnotations"
+			value="${modifyAnnotations}" />
+		<property name="print" value="${print}" />
+		<property name="printDegraded" value="${printDegraded}" />
 	</bean>
 
 </beans>
