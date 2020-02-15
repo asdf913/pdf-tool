@@ -2,6 +2,18 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd">
+
+	<bean
+		class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
+		<property name="ignoreResourceNotFound" value="true" />
+		<property name="locations">
+			<list>
+				<value>classpath:configuration.properties</value>
+				<value>file:configuration.properties</value>
+			</list>
+		</property>
+	</bean>
+
 	<bean class="org.apache.pdfbox.pdmodel.DocumentWriter">
 		<property name="jFrame">
 			<bean class="javax.swing.JFrame">
@@ -12,4 +24,5 @@
 			</bean>
 		</property>
 	</bean>
+
 </beans>
