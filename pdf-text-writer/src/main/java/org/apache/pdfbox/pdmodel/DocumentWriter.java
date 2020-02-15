@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +31,9 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.swing.AbstractButton;
 import javax.swing.ComboBoxModel;
@@ -57,10 +61,12 @@ import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDFontLike;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.springframework.beans.factory.InitializingBean;
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -115,6 +121,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private Color color = null;
 
+	private String fontName = null;
+
 	private Integer fontSize = null;
 
 	private Integer margin = null;
@@ -128,6 +136,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	public JFrame getjFrame() {
 		return jFrame;
+	}
+
+	public void setFontName(final String fontName) {
+		this.fontName = fontName;
 	}
 
 	public void setFontSize(final Integer fontSize) {
@@ -162,9 +174,13 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		add(container, tfMargin = new JTextField(toString(margin)), wrap);
 		//
 		add(container, new JLabel("Font"));
-		add(container,
-				new JComboBox<>(font = new DefaultComboBoxModel<>(ArrayUtils.insert(0, getFonts(), (PDFont) null))),
+		final PDFont[] fonts = getFonts();
+		//
+		add(container, new JComboBox<>(font = new DefaultComboBoxModel<>(ArrayUtils.insert(0, fonts, (PDFont) null))),
 				wrap);
+		font.setSelectedItem(Iterables.getFirst(
+				collect(filter(stream(fonts), font -> Objects.equals(getName(font), fontName)), Collectors.toList()),
+				null));
 		//
 		add(container, new JLabel("Text"));
 		add(container, new JScrollPane(tfText = new JTextArea(10, 100)), wrap);
@@ -201,6 +217,22 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		setWidth(width, tfFontSize, tfMargin, tfText);
 		setWidth((int) (width - getWidth(getPreferredSize(label), 0) * 3) / 2, pfOwner1, pfOwner2, pfUser1, pfUser2);
 		//
+	}
+
+	private static <T> Stream<T> stream(final T[] instance) {
+		return instance != null ? Arrays.stream(instance) : null;
+	}
+
+	private static <T> Stream<T> filter(final Stream<T> instance, final Predicate<? super T> predicate) {
+		return instance != null && predicate != null ? instance.filter(predicate) : null;
+	}
+
+	private static <T, R, A> R collect(final Stream<T> instance, final Collector<? super T, A, R> collector) {
+		return instance != null && collector != null ? instance.collect(collector) : null;
+	}
+
+	private static String getName(final PDFontLike instance) {
+		return instance != null ? instance.getName() : null;
 	}
 
 	private static String toString(final Object instance) {

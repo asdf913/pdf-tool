@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collector;
+import java.util.stream.Stream;
 
 import javax.swing.AbstractButton;
 import javax.swing.ComboBoxModel;
@@ -36,6 +38,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy;
 import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDFontLike;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,7 +55,7 @@ class DocumentWriterTest {
 			METHOD_TEST_AND_GET3, METHOD_GET_FOREGROUND, METHOD_VALUE_OF, METHOD_GET, METHOD_GET_SELECTED_ITEM,
 			METHOD_SET_WIDTH, METHOD_GET_TEXT, METHOD_CREATE_ACCESS_PERMISSION, METHOD_SET_ACCESSIBLE, METHOD_TO_LINES,
 			METHOD_CHECK_PASSWORD, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_CREATE_PROPERTIES_DIALOG,
-			METHOD_CREATE_PERMISSION_DIALOG = null;
+			METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM, METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -111,6 +114,14 @@ class DocumentWriterTest {
 		(METHOD_CREATE_PROPERTIES_DIALOG = clz.getDeclaredMethod("createPropertiesDialog")).setAccessible(true);
 		//
 		(METHOD_CREATE_PERMISSION_DIALOG = clz.getDeclaredMethod("createPermissionDialog")).setAccessible(true);
+		//
+		(METHOD_STREAM = clz.getDeclaredMethod("stream", Object[].class)).setAccessible(true);
+		//
+		(METHOD_FILTER = clz.getDeclaredMethod("filter", Stream.class, Predicate.class)).setAccessible(true);
+		//
+		(METHOD_COLLECT = clz.getDeclaredMethod("collect", Stream.class, Collector.class)).setAccessible(true);
+		//
+		(METHOD_GET_NAME = clz.getDeclaredMethod("getName", PDFontLike.class)).setAccessible(true);
 		//
 	}
 
@@ -638,6 +649,84 @@ class DocumentWriterTest {
 				return null;
 			} else if (obj instanceof JDialog) {
 				return (JDialog) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testStream() throws Throwable {
+		Assertions.assertNull(stream(null));
+	}
+
+	private static <T> Stream<T> stream(final T[] instance) throws Throwable {
+		try {
+			final Object obj = METHOD_STREAM.invoke(null, (Object) instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof Stream) {
+				return (Stream) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testFilter() throws Throwable {
+		//
+		Assertions.assertNull(filter(null, null));
+		Assertions.assertNull(filter(Stream.of(), null));
+		//
+	}
+
+	private static <T> Stream<T> filter(final Stream<T> instance, final Predicate<? super T> predicate)
+			throws Throwable {
+		try {
+			final Object obj = METHOD_FILTER.invoke(null, instance, predicate);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof Stream) {
+				return (Stream) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testCollect() throws Throwable {
+		//
+		Assertions.assertNull(collect(null, null));
+		Assertions.assertNull(collect(Stream.of(), null));
+		//
+	}
+
+	private static <T, R, A> R collect(final Stream<T> instance, final Collector<? super T, A, R> collector)
+			throws Throwable {
+		try {
+			return (R) METHOD_COLLECT.invoke(null, instance, collector);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetName() throws Throwable {
+		Assertions.assertNull(getName(null));
+	}
+
+	private static String getName(final PDFontLike instance) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_NAME.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof String) {
+				return (String) obj;
 			}
 			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
