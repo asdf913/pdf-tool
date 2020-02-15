@@ -23,6 +23,12 @@
 					value="#{T(javax.swing.JFrame).EXIT_ON_CLOSE}" />
 			</bean>
 		</property>
+		<!-- fontSize -->
+		<property name="fontSize"
+			value="#{T(java.lang.Math).max(T(org.apache.commons.lang3.math.NumberUtils).toInt(${fontSize},0),1)}" />
+		<!-- margin -->
+		<property name="margin"
+			value="#{T(java.lang.Math).max(T(org.apache.commons.lang3.math.NumberUtils).toInt(${margin},0),1)}" />
 	</bean>
 
 </beans>

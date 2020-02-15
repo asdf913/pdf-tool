@@ -66,7 +66,7 @@ import net.miginfocom.swing.MigLayout;
 
 public class DocumentWriter implements ActionListener, InitializingBean {
 
-	private static final Logger LOG = Logger.getLogger(DocumentWriter.class.toString());
+	private static final Logger LOG = Logger.getLogger(toString(DocumentWriter.class));
 
 	private static final String WRAP = "wrap";
 
@@ -115,6 +115,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private Color color = null;
 
+	private Integer fontSize = null;
+
+	private Integer margin = null;
+
 	private DocumentWriter() {
 	}
 
@@ -124,6 +128,14 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	public JFrame getjFrame() {
 		return jFrame;
+	}
+
+	public void setFontSize(final Integer fontSize) {
+		this.fontSize = fontSize;
+	}
+
+	public void setMargin(final Integer margin) {
+		this.margin = margin;
 	}
 
 	@Override
@@ -144,10 +156,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				wrap);
 		//
 		add(container, new JLabel("Font size"));
-		add(container, tfFontSize = new JTextField("12"), wrap);
+		add(container, tfFontSize = new JTextField(toString(fontSize)), wrap);
 		//
 		add(container, new JLabel("Margin"));
-		add(container, tfMargin = new JTextField("10"), wrap);
+		add(container, tfMargin = new JTextField(toString(margin)), wrap);
 		//
 		add(container, new JLabel("Font"));
 		add(container,
@@ -189,6 +201,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		setWidth(width, tfFontSize, tfMargin, tfText);
 		setWidth((int) (width - getWidth(getPreferredSize(label), 0) * 3) / 2, pfOwner1, pfOwner2, pfUser1, pfUser2);
 		//
+	}
+
+	private static String toString(final Object instance) {
+		return instance != null ? instance.toString() : null;
 	}
 
 	private static Dimension getPreferredSize(final Component instance) {
