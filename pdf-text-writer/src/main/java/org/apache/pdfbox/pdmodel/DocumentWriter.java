@@ -58,16 +58,19 @@ import org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.springframework.beans.factory.InitializingBean;
 
 import com.google.common.base.Predicates;
 
 import net.miginfocom.swing.MigLayout;
 
-public class DocumentWriter implements ActionListener {
+public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private static final Logger LOG = Logger.getLogger(DocumentWriter.class.toString());
 
 	private static final String WRAP = "wrap";
+
+	private JFrame jFrame = null;
 
 	private JTextComponent tfFontSize, tfMargin, tfText, pfOwner1, pfOwner2, pfUser1, pfUser2, tfFile, tfTitle,
 			tfAuthor, tfSubject, tfKeywords, tfCreator = null;
@@ -113,6 +116,19 @@ public class DocumentWriter implements ActionListener {
 	private Color color = null;
 
 	private DocumentWriter() {
+	}
+
+	public void setjFrame(final JFrame jFrame) {
+		this.jFrame = jFrame;
+	}
+
+	public JFrame getjFrame() {
+		return jFrame;
+	}
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		init(jFrame);
 	}
 
 	private void init(final Container container) {

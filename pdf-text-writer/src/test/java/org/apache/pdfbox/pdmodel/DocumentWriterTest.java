@@ -2,7 +2,6 @@ package org.apache.pdfbox.pdmodel;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Container;
 import java.awt.GraphicsEnvironment;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -48,7 +47,7 @@ class DocumentWriterTest {
 
 	private static final String OWNER_PASSWORD = "OWNER_PASSWORD";
 
-	private static Method METHOD_INIT, METHOD_GET_WIDTH, METHOD_GET_FONTS, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST,
+	private static Method METHOD_GET_WIDTH, METHOD_GET_FONTS, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST,
 			METHOD_ADD_ACTION_LISTENER, METHOD_CREATE_PROTECTION_POLICY, METHOD_SET_TEXT, METHOD_TEST_AND_GET2,
 			METHOD_TEST_AND_GET3, METHOD_GET_FOREGROUND, METHOD_VALUE_OF, METHOD_GET, METHOD_GET_SELECTED_ITEM,
 			METHOD_SET_WIDTH, METHOD_GET_TEXT, METHOD_CREATE_ACCESS_PERMISSION, METHOD_SET_ACCESSIBLE, METHOD_TO_LINES,
@@ -59,8 +58,6 @@ class DocumentWriterTest {
 	static void beforeAll() throws ReflectiveOperationException {
 		//
 		final Class<?> clz = DocumentWriter.class;
-		//
-		(METHOD_INIT = clz.getDeclaredMethod("init", Container.class)).setAccessible(true);
 		//
 		(METHOD_GET_WIDTH = clz.getDeclaredMethod("getWidth", Dimension2D.class, Double.TYPE)).setAccessible(true);
 		//
@@ -131,16 +128,8 @@ class DocumentWriterTest {
 	}
 
 	@Test
-	void testInit() {
-		Assertions.assertDoesNotThrow(() -> init(null));
-	}
-
-	private void init(final Container container) throws Throwable {
-		try {
-			METHOD_INIT.invoke(instance, container);
-		} catch (final InvocationTargetException e) {
-			throw e.getTargetException();
-		}
+	void testAfterPropertiesSet() throws Exception {
+		Assertions.assertDoesNotThrow(() -> instance.afterPropertiesSet());
 	}
 
 	@Test
@@ -632,9 +621,13 @@ class DocumentWriterTest {
 	@Test
 	void testCreatePermissionDialog() throws Throwable {
 		//
-		final JDialog instance1 = createPermissionDialog();
-		Assertions.assertNotNull(instance1);
-		Assertions.assertNotSame(instance1, createPermissionDialog());
+		if (!GraphicsEnvironment.isHeadless()) {
+			//
+			final JDialog instance1 = createPermissionDialog();
+			Assertions.assertNotNull(instance1);
+			Assertions.assertNotSame(instance1, createPermissionDialog());
+			//
+		}
 		//
 	}
 
