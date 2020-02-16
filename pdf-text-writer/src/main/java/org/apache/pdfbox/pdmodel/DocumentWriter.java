@@ -101,7 +101,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 	private JFrame jFrame = null;
 
 	private JTextComponent tfFontSize, tfMargin, tfText, pfOwner1, pfOwner2, pfUser1, pfUser2, tfFile, tfTitle,
-			tfAuthor, tfSubject, tfKeywords, tfCreator = null;
+			tfAuthor, tfSubject, tfKeywords, tfCreator, tfProducer = null;
 
 	private AbstractButton btnColor, btnProperties, btnPermission, btnExecute, btnCopy = null;
 
@@ -164,6 +164,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 	private String keywords = null;
 
 	private String creator = null;
+
+	private String producer = null;
 
 	private String assembleDocument = null;
 
@@ -244,6 +246,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	public void setCreator(final String creator) {
 		this.creator = creator;
+	}
+
+	public void setProducer(final String producer) {
+		this.producer = producer;
 	}
 
 	public void setAssembleDocument(final String assembleDocument) {
@@ -722,6 +728,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 					documentInformation.setSubject(getText(tfSubject));
 					documentInformation.setKeywords(getText(tfKeywords));
 					documentInformation.setCreator(getText(tfCreator));
+					documentInformation.setProducer(getText(tfProducer));
 				}
 				//
 				final File file = new File("test.pdf");
@@ -839,7 +846,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		add(dialog, new JLabel("Creator"));
 		add(dialog, tfCreator = ObjectUtils.defaultIfNull(tfCreator, new JTextField(creator)), WRAP);
 		//
-		setWidth(200, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator);
+		add(dialog, new JLabel("Producer"));
+		add(dialog, tfProducer = ObjectUtils.defaultIfNull(tfProducer, new JTextField(producer)), WRAP);
+		//
+		setWidth(200, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator, tfProducer);
 		//
 		return dialog;
 		//

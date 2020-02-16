@@ -50,6 +50,7 @@
 		<property name="subject" value="${subject}" />
 		<property name="keywords" value="${keywords}" />
 		<property name="creator" value="${creator}" />
+		<property name="producer" value="${producer}" />
 		<!-- permission -->
 		<property name="assembleDocument" value="${assembleDocument}" />
 		<property name="extractContent" value="${extractContent}" />
