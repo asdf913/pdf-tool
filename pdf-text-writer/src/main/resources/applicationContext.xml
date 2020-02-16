@@ -61,6 +61,8 @@
 			value="${modifyAnnotations}" />
 		<property name="print" value="${print}" />
 		<property name="printDegraded" value="${printDegraded}" />
+		<!-- toolTip -->
+		<property name="toolTip" value="${toolTip}" />
 	</bean>
 
 </beans>

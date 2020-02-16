@@ -185,6 +185,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private MenuItem exitMenuItem = null;
 
+	private String toolTip = null;
+
 	private DocumentWriter() {
 	}
 
@@ -276,6 +278,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		this.printDegraded = printDegraded;
 	}
 
+	public void setToolTip(final String toolTip) {
+		this.toolTip = toolTip;
+	}
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		//
@@ -361,7 +367,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		try {
 			add(SystemTray.isSupported() ? SystemTray.getSystemTray() : null,
-					createTrayIcon(createImage("PDF", "TEXT")));
+					createTrayIcon(createImage("PDF", "TEXT"), toolTip));
 		} catch (final AWTException e) {
 			e.printStackTrace();
 		}
@@ -423,14 +429,14 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		return instance != null ? instance.getFontMetrics() : null;
 	}
 
-	private TrayIcon createTrayIcon(final Image image) {
+	private TrayIcon createTrayIcon(final Image image, final String toolTip) {
 		//
 		final PopupMenu popup = new PopupMenu();
 		popup.add(showMenuItem = new MenuItem("Hide"));
 		popup.add(exitMenuItem = new MenuItem("Exit"));
 		addActionListener(this, showMenuItem, exitMenuItem);
 		//
-		final TrayIcon trayIcon = new TrayIcon(image);
+		final TrayIcon trayIcon = new TrayIcon(image, toolTip);
 		trayIcon.setPopupMenu(popup);
 		//
 		return trayIcon;
