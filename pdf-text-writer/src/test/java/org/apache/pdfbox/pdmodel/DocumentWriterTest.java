@@ -69,8 +69,8 @@ class DocumentWriterTest {
 			METHOD_CREATE_ACCESS_PERMISSION, METHOD_SET_ACCESSIBLE, METHOD_TO_LINES, METHOD_CHECK_PASSWORD, METHOD_PACK,
 			METHOD_SET_VISIBLE, METHOD_CREATE_PROPERTIES_DIALOG, METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM,
 			METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME, METHOD_CONTAINS_KEY, METHOD_GET_SOURCE,
-			METHOD_SET_FORE_GROUND, METHOD_ACCEPT, METHOD_TEST_AND_APPLY, METHOD_GET_KEY, METHOD_GET_VALUE,
-			METHOD_SET_SELECTED_ITEM, METHOD_FOR_EACH, METHOD_ADD, METHOD_GET_SYSTEM_CLIP_BOARD,
+			METHOD_SET_FORE_GROUND, METHOD_ACCEPT1, METHOD_ACCEPT2, METHOD_TEST_AND_APPLY, METHOD_GET_KEY,
+			METHOD_GET_VALUE, METHOD_SET_SELECTED_ITEM, METHOD_FOR_EACH, METHOD_ADD, METHOD_GET_SYSTEM_CLIP_BOARD,
 			METHOD_GET_FONT_METRICS, METHOD_ADD_WINDOW_LISTENER = null;
 
 	@BeforeAll
@@ -151,7 +151,9 @@ class DocumentWriterTest {
 		(METHOD_SET_FORE_GROUND = clz.getDeclaredMethod("setForeground", Component.class, Color.class))
 				.setAccessible(true);
 		//
-		(METHOD_ACCEPT = clz.getDeclaredMethod("accept", Object.class, Iterable.class)).setAccessible(true);
+		(METHOD_ACCEPT1 = clz.getDeclaredMethod("accept", Iterable.class, Object.class)).setAccessible(true);
+		//
+		(METHOD_ACCEPT2 = clz.getDeclaredMethod("accept", Consumer.class, Object.class)).setAccessible(true);
 		//
 		(METHOD_TEST_AND_APPLY = clz.getDeclaredMethod("testAndApply", Object.class, Predicate.class, Function.class,
 				Object.class)).setAccessible(true);
@@ -871,14 +873,25 @@ class DocumentWriterTest {
 	@Test
 	void testAccept() {
 		//
-		Assertions.assertDoesNotThrow(() -> accept(null, null));
-		Assertions.assertDoesNotThrow(() -> accept(null, Collections.singleton(null)));
+		Assertions.assertDoesNotThrow(() -> accept((Iterable<Consumer<Object>>) null, null));
+		Assertions.assertDoesNotThrow(() -> accept((Consumer<Object>) null, null));
+		Assertions.assertDoesNotThrow(() -> accept(i -> {
+		}, null));
+		Assertions.assertDoesNotThrow(() -> accept(Collections.singleton(null), null));
 		//
 	}
 
-	private static <T> void accept(final T value, final Iterable<Consumer<T>> consumers) throws Throwable {
+	private static <T> void accept(final Iterable<Consumer<T>> consumers, final T value) throws Throwable {
 		try {
-			METHOD_ACCEPT.invoke(null, value, consumers);
+			METHOD_ACCEPT1.invoke(null, consumers, value);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	private static <T> void accept(final Consumer<T> instance, final T value) throws Throwable {
+		try {
+			METHOD_ACCEPT2.invoke(null, instance, value);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

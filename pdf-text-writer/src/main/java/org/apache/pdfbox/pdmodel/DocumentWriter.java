@@ -366,8 +366,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			setForeground(tfText, color);
 		}
 		//
-		accept(ownerPassword, Arrays.asList(pfOwner1::setText, pfOwner2::setText));
-		accept(userPassword, Arrays.asList(pfUser1::setText, pfUser2::setText));
+		accept(Arrays.asList(pfOwner1::setText, pfOwner2::setText), ownerPassword);
+		accept(Arrays.asList(pfUser1::setText, pfUser2::setText), userPassword);
 		//
 		addWindowListener(jFrame, new InnerWindowAdapter());
 		//
@@ -469,7 +469,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		}
 	}
 
-	private static <T> void accept(final T value, final Iterable<Consumer<T>> consumers) {
+	private static <T> void accept(final Iterable<Consumer<T>> consumers, final T value) {
 		//
 		if (consumers != null) {
 			//
@@ -483,6 +483,14 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				//
 			} // for
 				//
+		} // if
+			//
+	}
+
+	private static <T> void accept(final Consumer<T> instance, final T value) {
+		//
+		if (instance != null) {
+			instance.accept(value);
 		} // if
 			//
 	}
@@ -723,12 +731,17 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				//
 				final PDDocumentInformation documentInformation = document.getDocumentInformation();
 				if (documentInformation != null) {
-					documentInformation.setTitle(getText(tfTitle));
-					documentInformation.setAuthor(getText(tfAuthor));
-					documentInformation.setSubject(getText(tfSubject));
-					documentInformation.setKeywords(getText(tfKeywords));
-					documentInformation.setCreator(getText(tfCreator));
-					documentInformation.setProducer(getText(tfProducer));
+					//
+					final Map<Consumer<String>, JTextComponent> values = new LinkedHashMap<>();
+					values.put(documentInformation::setTitle, tfTitle);
+					values.put(documentInformation::setAuthor, tfAuthor);
+					values.put(documentInformation::setSubject, tfSubject);
+					values.put(documentInformation::setKeywords, tfKeywords);
+					values.put(documentInformation::setCreator, tfCreator);
+					values.put(documentInformation::setProducer, tfProducer);
+					//
+					forEach(stream(entrySet(values)), entry -> accept(getKey(entry), getText(getValue(entry))));
+					//
 				}
 				//
 				final File file = new File("test.pdf");
