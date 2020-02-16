@@ -39,6 +39,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventObject;
@@ -724,9 +725,6 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				} // for
 					//
 				contentStream.endText();
-				//
-				contentStream.addComment("COMMENT 1");
-				//
 				contentStream.close();
 				//
 				final PDDocumentInformation documentInformation = document.getDocumentInformation();
@@ -741,6 +739,13 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 					values.put(documentInformation::setProducer, tfProducer);
 					//
 					forEach(stream(entrySet(values)), entry -> accept(getKey(entry), getText(getValue(entry))));
+					//
+					final Calendar creationDate = documentInformation.getCreationDate();
+					if (creationDate == null) {
+						accept(documentInformation::setCreationDate, Calendar.getInstance());
+					} else {
+						accept(documentInformation::setModificationDate, Calendar.getInstance());
+					}
 					//
 				}
 				//
