@@ -2,6 +2,8 @@ package org.apache.pdfbox.pdmodel;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
 import java.awt.GraphicsEnvironment;
 import java.awt.MenuItem;
 import java.awt.SystemTray;
@@ -11,6 +13,7 @@ import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowListener;
 import java.awt.geom.Dimension2D;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
@@ -67,8 +70,8 @@ class DocumentWriterTest {
 			METHOD_SET_VISIBLE, METHOD_CREATE_PROPERTIES_DIALOG, METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM,
 			METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME, METHOD_CONTAINS_KEY, METHOD_GET_SOURCE,
 			METHOD_SET_FORE_GROUND, METHOD_ACCEPT, METHOD_TEST_AND_APPLY, METHOD_GET_KEY, METHOD_GET_VALUE,
-			METHOD_SET_SELECTED_ITEM, METHOD_FOR_EACH, METHOD_ADD, METHOD_SET_LABEL,
-			METHOD_GET_SYSTEM_CLIP_BOARD = null;
+			METHOD_SET_SELECTED_ITEM, METHOD_FOR_EACH, METHOD_ADD, METHOD_GET_SYSTEM_CLIP_BOARD,
+			METHOD_GET_FONT_METRICS, METHOD_ADD_WINDOW_LISTENER = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -164,9 +167,12 @@ class DocumentWriterTest {
 		//
 		(METHOD_ADD = clz.getDeclaredMethod("add", SystemTray.class, TrayIcon.class)).setAccessible(true);
 		//
-		(METHOD_SET_LABEL = clz.getDeclaredMethod("setLabel", MenuItem.class, String.class)).setAccessible(true);
-		//
 		(METHOD_GET_SYSTEM_CLIP_BOARD = clz.getDeclaredMethod("getSystemClipboard", Toolkit.class)).setAccessible(true);
+		//
+		(METHOD_GET_FONT_METRICS = clz.getDeclaredMethod("getFontMetrics", Graphics.class)).setAccessible(true);
+		//
+		(METHOD_ADD_WINDOW_LISTENER = clz.getDeclaredMethod("addWindowListener", Window.class, WindowListener.class))
+				.setAccessible(true);
 		//
 	}
 
@@ -969,19 +975,6 @@ class DocumentWriterTest {
 	}
 
 	@Test
-	void testSetLabel() {
-		Assertions.assertDoesNotThrow(() -> setLabel(null, null));
-	}
-
-	private static synchronized void setLabel(final MenuItem instance, final String label) throws Throwable {
-		try {
-			METHOD_SET_LABEL.invoke(null, instance, label);
-		} catch (final InvocationTargetException e) {
-			throw e.getTargetException();
-		}
-	}
-
-	@Test
 	void testGetSystemClipboard() throws Throwable {
 		Assertions.assertNull(getSystemClipboard(null));
 	}
@@ -995,6 +988,56 @@ class DocumentWriterTest {
 				return (Clipboard) obj;
 			}
 			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetFontMetrics() throws Throwable {
+		Assertions.assertNull(getFontMetrics(null));
+	}
+
+	private static FontMetrics getFontMetrics(final Graphics instance) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_FONT_METRICS.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof FontMetrics) {
+				return (FontMetrics) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testInnerWindowAdapter() throws Throwable {
+		//
+		final Class<?> clz = Class.forName("org.apache.pdfbox.pdmodel.DocumentWriter$InnerWindowAdapter");
+		final Constructor<?> constructor = clz != null ? clz.getDeclaredConstructor(DocumentWriter.class) : null;
+		setAccessible(constructor);
+		final WindowListener windowListener = cast(WindowListener.class,
+				constructor != null ? constructor.newInstance(instance) : null);
+		//
+		Assertions.assertDoesNotThrow(() -> {
+			if (windowListener != null) {
+				windowListener.windowClosing(null);
+			}
+		});
+		//
+	}
+
+	@Test
+	void testAddWindowListener() {
+		Assertions.assertDoesNotThrow(() -> addWindowListener(new Window(null), null));
+	}
+
+	private static synchronized void addWindowListener(final Window instance, final WindowListener windowListener)
+			throws Throwable {
+		try {
+			METHOD_ADD_WINDOW_LISTENER.invoke(null, instance, windowListener);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

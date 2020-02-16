@@ -5,10 +5,15 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
+import java.awt.RenderingHints;
 import java.awt.SystemTray;
 import java.awt.Toolkit;
 import java.awt.TrayIcon;
@@ -21,6 +26,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.geom.Dimension2D;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -51,7 +57,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
@@ -356,8 +361,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		try {
 			add(SystemTray.isSupported() ? SystemTray.getSystemTray() : null,
-					createTrayIcon(ImageIO.read(getClass().getResourceAsStream("/trayIcon.png"))));
-		} catch (final IOException | AWTException e) {
+					createTrayIcon(createImage("PDF", "TEXT")));
+		} catch (final AWTException e) {
 			e.printStackTrace();
 		}
 		//
@@ -373,6 +378,49 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		if (instance != null && trayIcon != null) {
 			instance.add(trayIcon);
 		}
+	}
+
+	private static BufferedImage createImage(final String line1, final String line2) {
+		//
+		final int sixteen = 16;
+		BufferedImage img = new BufferedImage(sixteen, sixteen, BufferedImage.TYPE_INT_ARGB);
+		//
+		Graphics2D g2d = img.createGraphics();
+		if (g2d != null) {
+			//
+			final int eight = 8;
+			final String arial = "Arial";
+			//
+			final Font font1 = new Font(arial, Font.BOLD, eight);
+			g2d.setFont(font1);
+			final FontMetrics fm = getFontMetrics(g2d);
+			g2d.dispose();
+			//
+			if ((g2d = (img = new BufferedImage(sixteen, sixteen, BufferedImage.TYPE_INT_ARGB))
+					.createGraphics()) != null) {
+				//
+				g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				//
+				g2d.setColor(Color.BLACK);
+				//
+				g2d.setFont(font1);
+				g2d.drawString(line1, 0, 0 + eight);
+				//
+				g2d.setFont(new Font(arial, Font.PLAIN, 6));
+				g2d.drawString(line2, 0, fm.getAscent() + eight);
+				//
+				g2d.dispose();
+				//
+			} // if
+				//
+		} // if
+			//
+		return img;
+		//
+	}
+
+	private static FontMetrics getFontMetrics(final Graphics instance) {
+		return instance != null ? instance.getFontMetrics() : null;
 	}
 
 	private TrayIcon createTrayIcon(final Image image) {
