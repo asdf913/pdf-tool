@@ -384,7 +384,6 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		final TrayIcon trayIcon = new TrayIcon(image);
 		trayIcon.setPopupMenu(popup);
-		trayIcon.addActionListener(this);
 		//
 		return trayIcon;
 		//
@@ -740,7 +739,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 	}
 
 	private static Boolean isVisible(final Component instance) {
-		return instance != null ? Boolean.valueOf(instance.isValid()) : null;
+		return instance != null ? Boolean.valueOf(instance.isVisible()) : null;
 	}
 
 	private static void setForeground(final Component instance, final Color color) {
