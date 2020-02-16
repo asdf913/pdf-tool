@@ -439,6 +439,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 	private TrayIcon createTrayIcon(final Image image, final String toolTip) {
 		//
 		final PopupMenu popup = new PopupMenu();
+		popup.add(new MenuItem("PDF Text Writer"));
 		popup.add(showMenuItem = new MenuItem("Hide"));
 		popup.add(exitMenuItem = new MenuItem("Exit"));
 		addActionListener(this, showMenuItem, exitMenuItem);
