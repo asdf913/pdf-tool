@@ -1,15 +1,25 @@
 package org.apache.pdfbox.pdmodel;
 
+import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.HeadlessException;
+import java.awt.Image;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
 import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.geom.Dimension2D;
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +51,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
@@ -164,6 +175,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 	private String print = null;
 
 	private String printDegraded = null;
+
+	private MenuItem showMenuItem = null;
+
+	private MenuItem exitMenuItem = null;
 
 	private DocumentWriter() {
 	}
@@ -337,6 +352,62 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		accept(ownerPassword, Arrays.asList(pfOwner1::setText, pfOwner2::setText));
 		accept(userPassword, Arrays.asList(pfUser1::setText, pfUser2::setText));
 		//
+		addWindowListener(jFrame, new InnerWindowAdapter());
+		//
+		try {
+			add(SystemTray.isSupported() ? SystemTray.getSystemTray() : null,
+					createTrayIcon(ImageIO.read(getClass().getResourceAsStream("/trayIcon.png"))));
+		} catch (final IOException | AWTException e) {
+			e.printStackTrace();
+		}
+		//
+	}
+
+	private static synchronized void addWindowListener(final Window instance, final WindowListener windowListener) {
+		if (instance != null) {
+			instance.addWindowListener(windowListener);
+		}
+	}
+
+	private static void add(final SystemTray instance, final TrayIcon trayIcon) throws AWTException {
+		if (instance != null && trayIcon != null) {
+			instance.add(trayIcon);
+		}
+	}
+
+	private TrayIcon createTrayIcon(final Image image) {
+		//
+		final PopupMenu popup = new PopupMenu();
+		popup.add(showMenuItem = new MenuItem("Hide"));
+		popup.add(exitMenuItem = new MenuItem("Exit"));
+		addActionListener(this, showMenuItem, exitMenuItem);
+		//
+		final TrayIcon trayIcon = new TrayIcon(image);
+		trayIcon.setPopupMenu(popup);
+		trayIcon.addActionListener(this);
+		//
+		return trayIcon;
+		//
+	}
+
+	private class InnerWindowAdapter extends WindowAdapter {
+
+		@Override
+		public void windowClosed(final WindowEvent e) {
+			System.exit(0);
+		}
+
+		@Override
+		public void windowClosing(final WindowEvent e) {
+			setLabel(showMenuItem, "Show");
+		}
+
+	}
+
+	private static synchronized void setLabel(final MenuItem instance, final String label) {
+		if (instance != null) {
+			instance.setLabel(label);
+		}
 	}
 
 	private static <T> void accept(final T value, final Iterable<Consumer<T>> consumers) {
@@ -426,7 +497,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 			try {
 				//
-				if ((font = cast(PDFont.class, f.get(null))) == null) {
+				if ((font = cast(PDFont.class, get(f, null))) == null) {
 					continue;
 				}
 				//
@@ -443,6 +514,10 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 		return result != null ? result.toArray(new PDFont[result.size()]) : null;
 		//
+	}
+
+	private static Object get(final Field field, final Object instance) throws IllegalAccessException {
+		return field != null ? field.get(instance) : null;
 	}
 
 	private static void setAccessible(final AccessibleObject instance) {
@@ -472,7 +547,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 			try {
 				//
-				if ((pdRectangle = cast(PDRectangle.class, f.get(null))) == null) {
+				if ((pdRectangle = cast(PDRectangle.class, get(f, null))) == null) {
 					continue;
 				}
 				//
@@ -506,6 +581,22 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			} // skip null
 				//
 			b.addActionListener(actionListener);
+			//
+		} // for
+			//
+	}
+
+	private static void addActionListener(final ActionListener actionListener, final MenuItem... mis) {
+		//
+		MenuItem mi = null;
+		//
+		for (int i = 0; mis != null && i < mis.length; i++) {
+			//
+			if ((mi = mis[i]) == null) {
+				continue;
+			} // skip null
+				//
+			mi.addActionListener(actionListener);
 			//
 		} // for
 			//
@@ -606,8 +697,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 		} else if (Objects.equals(source, btnCopy)) {
 			//
-			final Toolkit toolkit = Toolkit.getDefaultToolkit();
-			final Clipboard clipboard = toolkit != null ? toolkit.getSystemClipboard() : null;
+			final Clipboard clipboard = getSystemClipboard(Toolkit.getDefaultToolkit());
 			if (clipboard != null) {
 				clipboard.setContents(new StringSelection(getText(tfFile)), null);
 			}
@@ -630,8 +720,27 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			pack(dialog);
 			setVisible(dialog, true);
 			//
+		} else if (Objects.equals(source, showMenuItem)) {
+			final Boolean isVisible = isVisible(jFrame);
+			if (Objects.equals(Boolean.TRUE, isVisible)) {
+				setVisible(jFrame, false);
+				setLabel(showMenuItem, "Show");
+			} else if (Objects.equals(Boolean.FALSE, isVisible)) {
+				setVisible(jFrame, true);
+				setLabel(showMenuItem, "Hide");
+			}
+		} else if (Objects.equals(source, exitMenuItem) && jFrame != null) {
+			jFrame.dispose();
 		}
 		//
+	}
+
+	private static Clipboard getSystemClipboard(final Toolkit instance) throws HeadlessException {
+		return instance != null ? instance.getSystemClipboard() : null;
+	}
+
+	private static Boolean isVisible(final Component instance) {
+		return instance != null ? Boolean.valueOf(instance.isValid()) : null;
 	}
 
 	private static void setForeground(final Component instance, final Color color) {
@@ -903,7 +1012,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 			try {
 				//
-				if ((model = cast(ComboBoxModel.class, instance != null ? f.get(instance) : null)) != null
+				if ((model = cast(ComboBoxModel.class, instance != null ? get(f, instance) : null)) != null
 						&& (b = cast(Boolean.class, model.getSelectedItem())) != null
 						&& (method = AccessPermission.class.getDeclaredMethod(methodName, Boolean.TYPE)) != null) {
 					//
@@ -946,10 +1055,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		try {
 			final Field field = Component.class.getDeclaredField("foreground");
-			if (field != null && !field.isAccessible()) {
-				field.setAccessible(true);
-			}
-			return cast(Color.class, field != null && instance != null ? field.get(instance) : null);
+			setAccessible(field);
+			return cast(Color.class, instance != null ? get(field, instance) : null);
 		} catch (final NoSuchFieldException | IllegalAccessException e) {
 			LOG.severe(e.getMessage());
 		}

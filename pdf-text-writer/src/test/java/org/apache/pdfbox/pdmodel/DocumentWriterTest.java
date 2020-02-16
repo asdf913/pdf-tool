@@ -3,7 +3,12 @@ package org.apache.pdfbox.pdmodel;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.GraphicsEnvironment;
+import java.awt.MenuItem;
+import java.awt.SystemTray;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.awt.Window;
+import java.awt.datatransfer.Clipboard;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Dimension2D;
@@ -55,13 +60,15 @@ class DocumentWriterTest {
 	private static final String OWNER_PASSWORD = "OWNER_PASSWORD";
 
 	private static Method METHOD_GET_WIDTH, METHOD_GET_FONTS, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST,
-			METHOD_ADD_ACTION_LISTENER, METHOD_CREATE_PROTECTION_POLICY, METHOD_SET_TEXT, METHOD_TEST_AND_GET2,
-			METHOD_TEST_AND_GET3, METHOD_GET_FOREGROUND, METHOD_VALUE_OF, METHOD_GET, METHOD_GET_SELECTED_ITEM,
-			METHOD_SET_WIDTH, METHOD_GET_TEXT, METHOD_CREATE_ACCESS_PERMISSION, METHOD_SET_ACCESSIBLE, METHOD_TO_LINES,
-			METHOD_CHECK_PASSWORD, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_CREATE_PROPERTIES_DIALOG,
-			METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM, METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME,
-			METHOD_CONTAINS_KEY, METHOD_GET_SOURCE, METHOD_SET_FORE_GROUND, METHOD_ACCEPT, METHOD_TEST_AND_APPLY,
-			METHOD_GET_KEY, METHOD_GET_VALUE, METHOD_SET_SELECTED_ITEM, METHOD_FOR_EACH = null;
+			METHOD_ADD_ACTION_LISTENER1, METHOD_ADD_ACTION_LISTENER2, METHOD_CREATE_PROTECTION_POLICY, METHOD_SET_TEXT,
+			METHOD_TEST_AND_GET2, METHOD_TEST_AND_GET3, METHOD_GET_FOREGROUND, METHOD_VALUE_OF, METHOD_GET_MAP,
+			METHOD_GET_FIELD, METHOD_GET_SELECTED_ITEM, METHOD_SET_WIDTH, METHOD_GET_TEXT,
+			METHOD_CREATE_ACCESS_PERMISSION, METHOD_SET_ACCESSIBLE, METHOD_TO_LINES, METHOD_CHECK_PASSWORD, METHOD_PACK,
+			METHOD_SET_VISIBLE, METHOD_CREATE_PROPERTIES_DIALOG, METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM,
+			METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME, METHOD_CONTAINS_KEY, METHOD_GET_SOURCE,
+			METHOD_SET_FORE_GROUND, METHOD_ACCEPT, METHOD_TEST_AND_APPLY, METHOD_GET_KEY, METHOD_GET_VALUE,
+			METHOD_SET_SELECTED_ITEM, METHOD_FOR_EACH, METHOD_ADD, METHOD_SET_LABEL,
+			METHOD_GET_SYSTEM_CLIP_BOARD = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -76,8 +83,11 @@ class DocumentWriterTest {
 		//
 		(METHOD_CAST = clz.getDeclaredMethod("cast", Class.class, Object.class)).setAccessible(true);
 		//
-		(METHOD_ADD_ACTION_LISTENER = clz.getDeclaredMethod("addActionListener", ActionListener.class,
+		(METHOD_ADD_ACTION_LISTENER1 = clz.getDeclaredMethod("addActionListener", ActionListener.class,
 				AbstractButton[].class)).setAccessible(true);
+		//
+		(METHOD_ADD_ACTION_LISTENER2 = clz.getDeclaredMethod("addActionListener", ActionListener.class,
+				MenuItem[].class)).setAccessible(true);
 		//
 		(METHOD_CREATE_PROTECTION_POLICY = clz.getDeclaredMethod("createProtectionPolicy", String.class, String.class,
 				AccessPermission.class)).setAccessible(true);
@@ -94,7 +104,9 @@ class DocumentWriterTest {
 		//
 		(METHOD_VALUE_OF = clz.getDeclaredMethod("valueOf", String.class)).setAccessible(true);
 		//
-		(METHOD_GET = clz.getDeclaredMethod("get", Map.class, Object.class)).setAccessible(true);
+		(METHOD_GET_MAP = clz.getDeclaredMethod("get", Map.class, Object.class)).setAccessible(true);
+		//
+		(METHOD_GET_FIELD = clz.getDeclaredMethod("get", Field.class, Object.class)).setAccessible(true);
 		//
 		(METHOD_GET_SELECTED_ITEM = clz.getDeclaredMethod("getSelectedItem", ComboBoxModel.class)).setAccessible(true);
 		//
@@ -150,6 +162,12 @@ class DocumentWriterTest {
 		//
 		(METHOD_FOR_EACH = clz.getDeclaredMethod("forEach", Stream.class, Consumer.class)).setAccessible(true);
 		//
+		(METHOD_ADD = clz.getDeclaredMethod("add", SystemTray.class, TrayIcon.class)).setAccessible(true);
+		//
+		(METHOD_SET_LABEL = clz.getDeclaredMethod("setLabel", MenuItem.class, String.class)).setAccessible(true);
+		//
+		(METHOD_GET_SYSTEM_CLIP_BOARD = clz.getDeclaredMethod("getSystemClipboard", Toolkit.class)).setAccessible(true);
+		//
 	}
 
 	private DocumentWriter instance = null;
@@ -178,6 +196,19 @@ class DocumentWriterTest {
 		final AbstractButton btnCopy = new JButton();
 		FieldUtils.writeDeclaredField(instance, "btnCopy", btnCopy, true);
 		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(new ActionEvent(btnCopy, 1, null)));
+		//
+		final MenuItem showMenuItem = new MenuItem();
+		FieldUtils.writeDeclaredField(instance, "showMenuItem", showMenuItem, true);
+		final ActionEvent actionEvent = new ActionEvent(showMenuItem, 1, null);
+		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(actionEvent));
+		//
+		final MenuItem exitMenuItem = new MenuItem();
+		FieldUtils.writeDeclaredField(instance, "exitMenuItem", exitMenuItem, true);
+		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(new ActionEvent(exitMenuItem, 1, null)));
+		//
+		final JFrame jFrame = new JFrame();
+		instance.setjFrame(jFrame);
+		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(actionEvent));
 		//
 	}
 
@@ -272,12 +303,23 @@ class DocumentWriterTest {
 		Assertions.assertDoesNotThrow(() -> addActionListener(null, (AbstractButton[]) null));
 		Assertions.assertDoesNotThrow(() -> addActionListener(null, (AbstractButton) null));
 		//
+		Assertions.assertDoesNotThrow(() -> addActionListener(null, (MenuItem[]) null));
+		Assertions.assertDoesNotThrow(() -> addActionListener(null, (MenuItem) null));
+		//
 	}
 
 	private static void addActionListener(final ActionListener actionListener, final AbstractButton... bs)
 			throws Throwable {
 		try {
-			METHOD_ADD_ACTION_LISTENER.invoke(null, actionListener, bs);
+			METHOD_ADD_ACTION_LISTENER1.invoke(null, actionListener, bs);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	private static void addActionListener(final ActionListener actionListener, final MenuItem... bs) throws Throwable {
+		try {
+			METHOD_ADD_ACTION_LISTENER2.invoke(null, actionListener, bs);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -413,14 +455,24 @@ class DocumentWriterTest {
 	@Test
 	void testGet() throws Throwable {
 		//
-		Assertions.assertNull(get(null, null));
+		Assertions.assertNull(get((Map<?, ?>) null, null));
 		Assertions.assertSame(OWNER_PASSWORD, get(Collections.singletonMap(null, OWNER_PASSWORD), null));
+		//
+		Assertions.assertNull(get((Field) null, null));
 		//
 	}
 
 	private static <V> V get(final Map<?, V> instance, final Object key) throws Throwable {
 		try {
-			return (V) METHOD_GET.invoke(null, instance, key);
+			return (V) METHOD_GET_MAP.invoke(null, instance, key);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	private static Object get(final Field field, final Object instance) throws Throwable {
+		try {
+			return METHOD_GET_FIELD.invoke(null, field, instance);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -892,6 +944,57 @@ class DocumentWriterTest {
 	private static <T> void forEach(final Stream<T> instance, Consumer<? super T> action) throws Throwable {
 		try {
 			METHOD_FOR_EACH.invoke(null, instance, action);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testAdd() {
+		//
+		Assertions.assertDoesNotThrow(() -> add(null, null));
+		//
+		if (SystemTray.isSupported()) {
+			Assertions.assertDoesNotThrow(() -> add(SystemTray.getSystemTray(), null));
+		}
+		//
+	}
+
+	private static void add(final SystemTray instance, final TrayIcon trayIcon) throws Throwable {
+		try {
+			METHOD_ADD.invoke(null, instance, trayIcon);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetLabel() {
+		Assertions.assertDoesNotThrow(() -> setLabel(null, null));
+	}
+
+	private static synchronized void setLabel(final MenuItem instance, final String label) throws Throwable {
+		try {
+			METHOD_SET_LABEL.invoke(null, instance, label);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetSystemClipboard() throws Throwable {
+		Assertions.assertNull(getSystemClipboard(null));
+	}
+
+	private static Clipboard getSystemClipboard(final Toolkit instance) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_SYSTEM_CLIP_BOARD.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof Clipboard) {
+				return (Clipboard) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
