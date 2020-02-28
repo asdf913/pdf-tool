@@ -1,12 +1,27 @@
 package org.apache.pdfbox.pdmodel;
 
+import java.awt.AWTException;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.RenderingHints;
+import java.awt.SystemTray;
+import java.awt.TrayIcon;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
@@ -55,6 +70,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	private File file = null;
 
+	private MenuItem showMenuItem, exitMenuItem = null;
+
+	private String toolTip = null;
+
 	private ImagePdfWriter() {
 	}
 
@@ -64,6 +83,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	public JFrame getjFrame() {
 		return jFrame;
+	}
+
+	public void setToolTip(final String toolTip) {
+		this.toolTip = toolTip;
 	}
 
 	@Override
@@ -105,6 +128,51 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		setWidth(PREFERRED_WIDTH, tfFile);
 		setWidth(PREFERRED_WIDTH / 2, pfOwner1, pfOwner2, pfUser1, pfUser2);
 		//
+		addWindowListener(jFrame, new InnerWindowAdapter());
+		//
+		try {
+			add(SystemTray.isSupported() ? SystemTray.getSystemTray() : null,
+					createTrayIcon(createImage("PDF", "IMG"), toolTip));
+		} catch (final AWTException e) {
+			e.printStackTrace();
+		}
+		//
+	}
+
+	private static synchronized void addWindowListener(final Window instance, final WindowListener windowListener) {
+		if (instance != null) {
+			instance.addWindowListener(windowListener);
+		}
+	}
+
+	private class InnerWindowAdapter extends WindowAdapter {
+
+		@Override
+		public void windowClosed(final WindowEvent e) {
+			System.exit(0);
+		}
+
+		@Override
+		public void windowClosing(final WindowEvent e) {
+			setLabel(showMenuItem, "Show");
+		}
+
+	}
+
+	private static void addActionListener(final ActionListener actionListener, final MenuItem... mis) {
+		//
+		MenuItem mi = null;
+		//
+		for (int i = 0; mis != null && i < mis.length; i++) {
+			//
+			if ((mi = mis[i]) == null) {
+				continue;
+			} // skip null
+				//
+			mi.addActionListener(actionListener);
+			//
+		} // for
+			//
 	}
 
 	private static void setWidth(final int width, final Component... cs) {
@@ -189,8 +257,29 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 				LOG.error(e.getMessage(), e);
 			}
 			//
+		} else if (Objects.equals(source, showMenuItem)) {
+			final Boolean isVisible = isVisible(jFrame);
+			if (Objects.equals(Boolean.TRUE, isVisible)) {
+				setVisible(jFrame, false);
+				setLabel(showMenuItem, "Show");
+			} else if (Objects.equals(Boolean.FALSE, isVisible)) {
+				setVisible(jFrame, true);
+				setLabel(showMenuItem, "Hide");
+			}
+		} else if (Objects.equals(source, exitMenuItem) && jFrame != null) {
+			jFrame.dispose();
 		}
 		//
+	}
+
+	private static Boolean isVisible(final Component instance) {
+		return instance != null ? Boolean.valueOf(instance.isVisible()) : null;
+	}
+
+	private static synchronized void setLabel(final MenuItem instance, final String label) {
+		if (instance != null) {
+			instance.setLabel(label);
+		}
 	}
 
 	private static void setIcon(final JLabel instance, final Icon icon) {
@@ -277,6 +366,69 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		//
 		return doc;
 		//
+	}
+
+	private TrayIcon createTrayIcon(final Image image, final String toolTip) {
+		//
+		final PopupMenu popup = new PopupMenu();
+		popup.add(new MenuItem("PDF Image Writer"));
+		popup.add(showMenuItem = new MenuItem("Hide"));
+		popup.add(exitMenuItem = new MenuItem("Exit"));
+		//
+		addActionListener(this, showMenuItem, exitMenuItem);
+		//
+		final TrayIcon trayIcon = new TrayIcon(image, toolTip);
+		trayIcon.setPopupMenu(popup);
+		//
+		return trayIcon;
+		//
+	}
+
+	private static BufferedImage createImage(final String line1, final String line2) {
+		//
+		final int sixteen = 16;
+		BufferedImage img = new BufferedImage(sixteen, sixteen, BufferedImage.TYPE_INT_ARGB);
+		//
+		Graphics2D g2d = img.createGraphics();
+		if (g2d != null) {
+			//
+			final int eight = 8;
+			final String arial = "Arial";
+			//
+			final Font font1 = new Font(arial, Font.BOLD, eight);
+			g2d.setFont(font1);
+			final FontMetrics fm = getFontMetrics(g2d);
+			g2d.dispose();
+			//
+			if ((g2d = (img = new BufferedImage(sixteen, sixteen, BufferedImage.TYPE_INT_ARGB))
+					.createGraphics()) != null) {
+				//
+				g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				//
+				g2d.setColor(Color.BLACK);
+				//
+				g2d.setFont(font1);
+				g2d.drawString(line1, 0, 0 + eight);
+				g2d.drawString(line2, 0, fm.getAscent() + eight);
+				//
+				g2d.dispose();
+				//
+			} // if
+				//
+		} // if
+			//
+		return img;
+		//
+	}
+
+	private static FontMetrics getFontMetrics(final Graphics instance) {
+		return instance != null ? instance.getFontMetrics() : null;
+	}
+
+	private static void add(final SystemTray instance, final TrayIcon trayIcon) throws AWTException {
+		if (instance != null && trayIcon != null) {
+			instance.add(trayIcon);
+		}
 	}
 
 }
