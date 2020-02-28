@@ -24,7 +24,9 @@ import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
@@ -72,7 +74,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	private MenuItem showMenuItem, exitMenuItem = null;
 
-	private String toolTip = null;
+	private String toolTip, ownerPassword, userPassword = null;
 
 	private ImagePdfWriter() {
 	}
@@ -87,6 +89,14 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	public void setToolTip(final String toolTip) {
 		this.toolTip = toolTip;
+	}
+
+	public void setOwnerPassword(final String ownerPassword) {
+		this.ownerPassword = ownerPassword;
+	}
+
+	public void setUserPassword(final String userPassword) {
+		this.userPassword = userPassword;
 	}
 
 	@Override
@@ -128,6 +138,9 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		setWidth(PREFERRED_WIDTH, tfFile);
 		setWidth(PREFERRED_WIDTH / 2, pfOwner1, pfOwner2, pfUser1, pfUser2);
 		//
+		accept(Arrays.asList(pfOwner1::setText, pfOwner2::setText), ownerPassword);
+		accept(Arrays.asList(pfUser1::setText, pfUser2::setText), userPassword);
+		//
 		addWindowListener(jFrame, new InnerWindowAdapter());
 		//
 		try {
@@ -137,6 +150,24 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			e.printStackTrace();
 		}
 		//
+	}
+
+	private static <T> void accept(final Iterable<Consumer<T>> consumers, final T value) {
+		//
+		if (consumers != null) {
+			//
+			for (final Consumer<T> consumer : consumers) {
+				//
+				if (consumer == null) {
+					continue;
+				} // skip null
+					//
+				consumer.accept(value);
+				//
+			} // for
+				//
+		} // if
+			//
 	}
 
 	private static synchronized void addWindowListener(final Window instance, final WindowListener windowListener) {

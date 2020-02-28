@@ -25,6 +25,10 @@
 			</bean>
 		</property>
 		<property name="toolTip" value="${toolTip}" />
+		<!-- ownerPassword -->
+		<property name="ownerPassword" value="${ownerPassword}" />
+		<!-- userPassword -->
+		<property name="userPassword" value="${userPassword}" />
 	</bean>
 
 </beans>
