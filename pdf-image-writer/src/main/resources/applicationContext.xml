@@ -24,6 +24,7 @@
 				<property name="title" value="${frame.title}" />
 			</bean>
 		</property>
+		<property name="toolTip" value="${toolTip}" />
 	</bean>
 
 </beans>
