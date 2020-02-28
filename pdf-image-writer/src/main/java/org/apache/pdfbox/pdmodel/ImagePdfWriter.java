@@ -31,10 +31,11 @@ import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 
 import net.miginfocom.swing.MigLayout;
 
-public class ImagePdfWriter implements ActionListener {
+public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ImagePdfWriter.class);
 
@@ -43,6 +44,8 @@ public class ImagePdfWriter implements ActionListener {
 	private static final int PREFERRED_WIDTH = 300;
 
 	private static final int PREFERRED_HEIGHT = 300;
+
+	private JFrame jFrame = null;
 
 	private JLabel labelImage = null;
 
@@ -53,6 +56,19 @@ public class ImagePdfWriter implements ActionListener {
 	private File file = null;
 
 	private ImagePdfWriter() {
+	}
+
+	public void setjFrame(final JFrame jFrame) {
+		this.jFrame = jFrame;
+	}
+
+	public JFrame getjFrame() {
+		return jFrame;
+	}
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		init(jFrame);
 	}
 
 	private void init(final Container container) {
