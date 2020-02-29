@@ -41,7 +41,6 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JTextField;
-import javax.swing.text.JTextComponent;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -63,14 +62,14 @@ class DocumentWriterTest {
 	private static final String OWNER_PASSWORD = "OWNER_PASSWORD";
 
 	private static Method METHOD_GET_WIDTH, METHOD_GET_FONTS, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST,
-			METHOD_ADD_ACTION_LISTENER1, METHOD_ADD_ACTION_LISTENER2, METHOD_CREATE_PROTECTION_POLICY, METHOD_SET_TEXT,
+			METHOD_ADD_ACTION_LISTENER1, METHOD_ADD_ACTION_LISTENER2, METHOD_CREATE_PROTECTION_POLICY,
 			METHOD_TEST_AND_GET2, METHOD_TEST_AND_GET3, METHOD_GET_FOREGROUND, METHOD_VALUE_OF, METHOD_GET_MAP,
-			METHOD_GET_FIELD, METHOD_GET_SELECTED_ITEM, METHOD_SET_WIDTH, METHOD_GET_TEXT,
-			METHOD_CREATE_ACCESS_PERMISSION, METHOD_SET_ACCESSIBLE, METHOD_TO_LINES, METHOD_CHECK_PASSWORD, METHOD_PACK,
-			METHOD_SET_VISIBLE, METHOD_CREATE_PROPERTIES_DIALOG, METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM,
-			METHOD_FILTER, METHOD_COLLECT, METHOD_GET_NAME, METHOD_CONTAINS_KEY, METHOD_GET_SOURCE,
-			METHOD_SET_FORE_GROUND, METHOD_ACCEPT1, METHOD_ACCEPT2, METHOD_TEST_AND_APPLY, METHOD_GET_KEY,
-			METHOD_GET_VALUE, METHOD_SET_SELECTED_ITEM, METHOD_FOR_EACH, METHOD_ADD, METHOD_GET_SYSTEM_CLIP_BOARD,
+			METHOD_GET_FIELD, METHOD_GET_SELECTED_ITEM, METHOD_SET_WIDTH, METHOD_CREATE_ACCESS_PERMISSION,
+			METHOD_SET_ACCESSIBLE, METHOD_TO_LINES, METHOD_CHECK_PASSWORD, METHOD_PACK, METHOD_SET_VISIBLE,
+			METHOD_CREATE_PROPERTIES_DIALOG, METHOD_CREATE_PERMISSION_DIALOG, METHOD_STREAM, METHOD_FILTER,
+			METHOD_COLLECT, METHOD_GET_NAME, METHOD_CONTAINS_KEY, METHOD_GET_SOURCE, METHOD_SET_FORE_GROUND,
+			METHOD_ACCEPT1, METHOD_ACCEPT2, METHOD_TEST_AND_APPLY, METHOD_GET_KEY, METHOD_GET_VALUE,
+			METHOD_SET_SELECTED_ITEM, METHOD_FOR_EACH, METHOD_ADD, METHOD_GET_SYSTEM_CLIP_BOARD,
 			METHOD_GET_FONT_METRICS, METHOD_ADD_WINDOW_LISTENER = null;
 
 	@BeforeAll
@@ -95,8 +94,6 @@ class DocumentWriterTest {
 		(METHOD_CREATE_PROTECTION_POLICY = clz.getDeclaredMethod("createProtectionPolicy", String.class, String.class,
 				AccessPermission.class)).setAccessible(true);
 		//
-		(METHOD_SET_TEXT = clz.getDeclaredMethod("setText", JTextComponent.class, String.class)).setAccessible(true);
-		//
 		(METHOD_TEST_AND_GET2 = clz.getDeclaredMethod("testAndGet", Predicate.class, Object[].class))
 				.setAccessible(true);
 		//
@@ -114,8 +111,6 @@ class DocumentWriterTest {
 		(METHOD_GET_SELECTED_ITEM = clz.getDeclaredMethod("getSelectedItem", ComboBoxModel.class)).setAccessible(true);
 		//
 		(METHOD_SET_WIDTH = clz.getDeclaredMethod("setWidth", Integer.TYPE, Component[].class)).setAccessible(true);
-		//
-		(METHOD_GET_TEXT = clz.getDeclaredMethod("getText", JTextComponent.class)).setAccessible(true);
 		//
 		(METHOD_CREATE_ACCESS_PERMISSION = clz.getDeclaredMethod("createAccessPermission", Object.class, Field[].class))
 				.setAccessible(true);
@@ -370,22 +365,6 @@ class DocumentWriterTest {
 	}
 
 	@Test
-	void testSetText() {
-		//
-		Assertions.assertDoesNotThrow(() -> setText(null, null));
-		Assertions.assertDoesNotThrow(() -> setText(new JTextField(), null));
-		//
-	}
-
-	private static void setText(final JTextComponent instance, final String text) throws Throwable {
-		try {
-			METHOD_SET_TEXT.invoke(null, instance, text);
-		} catch (final InvocationTargetException e) {
-			throw e.getTargetException();
-		}
-	}
-
-	@Test
 	void testTestAndGet() throws Throwable {
 		//
 		Assertions.assertNull(testAndGet(null, (Object[]) null));
@@ -515,25 +494,6 @@ class DocumentWriterTest {
 	private static void setWidth(final int width, final Component... cs) throws Throwable {
 		try {
 			METHOD_SET_WIDTH.invoke(null, width, cs);
-		} catch (final InvocationTargetException e) {
-			throw e.getTargetException();
-		}
-	}
-
-	@Test
-	void testGetText() throws Throwable {
-		Assertions.assertEquals(OWNER_PASSWORD, getText(new JTextField(OWNER_PASSWORD)));
-	}
-
-	private static String getText(final JTextComponent instance) throws Throwable {
-		try {
-			final Object obj = METHOD_GET_TEXT.invoke(null, instance);
-			if (obj == null) {
-				return null;
-			} else if (obj instanceof String) {
-				return (String) obj;
-			}
-			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

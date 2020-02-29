@@ -9,6 +9,11 @@
 	</parent>
 	<artifactId>pdf-image-writer</artifactId>
 	<dependencies>
+		<dependency>
+			<groupId>com.github.pdf</groupId>
+			<artifactId>swing-common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox -->
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>

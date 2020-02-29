@@ -72,6 +72,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextComponentUtil;
 import javax.swing.JTextField;
 import javax.swing.text.JTextComponent;
 
@@ -684,13 +685,13 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				return;
 			}
 			//
-			final Integer fontSize = valueOf(getText(tfFontSize));
+			final Integer fontSize = valueOf(JTextComponentUtil.getText(tfFontSize));
 			if (fontSize == null) {
 				JOptionPane.showMessageDialog(null, "Please enter a vaild font size");
 				return;
 			}
 			//
-			final Integer margin = valueOf(getText(tfMargin));
+			final Integer margin = valueOf(JTextComponentUtil.getText(tfMargin));
 			if (margin == null) {
 				JOptionPane.showMessageDialog(null, "Please enter a vaild margin");
 				return;
@@ -707,8 +708,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				//
 				final PDRectangle mediabox = page.getMediaBox();
 				float width = mediabox.getWidth() - 2 * margin.intValue();
-				final List<String> lines = ObjectUtils.defaultIfNull(toLines(getText(tfText), font, fontSize, width),
-						Collections.emptyList());
+				final List<String> lines = ObjectUtils.defaultIfNull(
+						toLines(JTextComponentUtil.getText(tfText), font, fontSize, width), Collections.emptyList());
 				//
 				float startX = mediabox.getLowerLeftX() + margin.intValue();
 				float startY = mediabox.getUpperRightY() - margin.intValue();
@@ -739,7 +740,8 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 					values.put(documentInformation::setCreator, tfCreator);
 					values.put(documentInformation::setProducer, tfProducer);
 					//
-					forEach(stream(entrySet(values)), entry -> accept(getKey(entry), getText(getValue(entry))));
+					forEach(stream(entrySet(values)),
+							entry -> accept(getKey(entry), JTextComponentUtil.getText(getValue(entry))));
 					//
 					final Calendar creationDate = documentInformation.getCreationDate();
 					if (creationDate == null) {
@@ -751,19 +753,20 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 				}
 				//
 				final File file = new File("test.pdf");
-				setText(tfFile, file.getAbsolutePath());
+				JTextComponentUtil.setText(tfFile, file.getAbsolutePath());
 				//
 				// https://pdfbox.apache.org/1.8/cookbook/encryption.html
 				//
-				if (!checkPassword(getText(pfOwner1), getText(pfOwner2))) {
+				if (!checkPassword(JTextComponentUtil.getText(pfOwner1), JTextComponentUtil.getText(pfOwner2))) {
 					JOptionPane.showMessageDialog(null, "Owner password not matched");
 					return;
-				} else if (!checkPassword(getText(pfUser1), getText(pfUser2))) {
+				} else if (!checkPassword(JTextComponentUtil.getText(pfUser1), JTextComponentUtil.getText(pfUser2))) {
 					JOptionPane.showMessageDialog(null, "User password not matched");
 					return;
 				}
 				//
-				document.protect(createProtectionPolicy(getText(pfOwner1), getText(pfUser1),
+				document.protect(createProtectionPolicy(JTextComponentUtil.getText(pfOwner1),
+						JTextComponentUtil.getText(pfUser1),
 						createAccessPermission(this, getClass().getDeclaredFields())));
 				//
 				document.save(file);
@@ -778,7 +781,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 			final Clipboard clipboard = getSystemClipboard(Toolkit.getDefaultToolkit());
 			if (clipboard != null) {
-				clipboard.setContents(new StringSelection(getText(tfFile)), null);
+				clipboard.setContents(new StringSelection(JTextComponentUtil.getText(tfFile)), null);
 			}
 			//
 		} else if (Objects.equals(source, btnColor)) {
@@ -1113,12 +1116,6 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 	}
 
-	private static void setText(final JTextComponent instance, final String text) {
-		if (instance != null) {
-			instance.setText(text);
-		}
-	}
-
 	private static <T> T testAndGet(final Predicate<T> predicate, final T... items) {
 		//
 		T item = null;
@@ -1178,10 +1175,6 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 		} // for
 			//
-	}
-
-	private static String getText(final JTextComponent instance) {
-		return instance != null ? instance.getText() : null;
 	}
 
 	public static void main(final String[] args) {

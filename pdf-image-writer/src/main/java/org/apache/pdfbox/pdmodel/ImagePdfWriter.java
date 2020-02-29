@@ -39,6 +39,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JTextComponentUtil;
 import javax.swing.JTextField;
 import javax.swing.text.JTextComponent;
 
@@ -236,7 +237,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			//
 			setIcon(labelImage, new ImageIcon());
 			//
-			setText(tfFile, null);
+			JTextComponentUtil.setText(tfFile, null);
 			//
 			final JFileChooser jfc = new JFileChooser(".");
 			//
@@ -246,7 +247,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 					setIcon(labelImage, new ImageIcon(getScaledInstance(ImageIO.read(file = jfc.getSelectedFile()),
 							PREFERRED_WIDTH, PREFERRED_HEIGHT, Image.SCALE_DEFAULT)));
 					//
-					setText(tfFile, file != null ? file.getAbsolutePath() : null);
+					JTextComponentUtil.setText(tfFile, file != null ? file.getAbsolutePath() : null);
 					//
 				} catch (final IOException | NullPointerException e) {
 					LOG.error(e.getMessage(), e);
@@ -266,13 +267,14 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 					//
 				}
 				//
-				final String owner1 = getText(pfOwner1), owner2 = getText(pfOwner2);
+				final String owner1 = JTextComponentUtil.getText(pfOwner1),
+						owner2 = JTextComponentUtil.getText(pfOwner2);
 				if (!Objects.deepEquals(owner1, owner2)) {
 					JOptionPane.showMessageDialog(null, "Owner passwords are not matched");
 					return;
 				}
 				//
-				final String user1 = getText(pfUser1), user2 = getText(pfUser2);
+				final String user1 = JTextComponentUtil.getText(pfUser1), user2 = JTextComponentUtil.getText(pfUser2);
 				if (!Objects.deepEquals(user1, user2)) {
 					JOptionPane.showMessageDialog(null, "User passwords are not matched");
 					return;
@@ -317,16 +319,6 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		if (instance != null) {
 			instance.setIcon(icon);
 		}
-	}
-
-	private static void setText(final JTextComponent instance, final String text) {
-		if (instance != null) {
-			instance.setText(text);
-		}
-	}
-
-	private static String getText(final JTextComponent instance) {
-		return instance != null ? instance.getText() : null;
 	}
 
 	private static Image getScaledInstance(final Image instance, final int width, final int height, final int hints) {
