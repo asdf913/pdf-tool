@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 
+import javax.swing.JFrame;
+
 import org.apache.commons.lang3.StringUtils;
 
 import com.lowagie.text.Document;
@@ -13,6 +15,16 @@ import com.lowagie.text.DocumentException;
 import com.lowagie.text.pdf.PdfWriter;
 
 public class HtmlPdfWriter {
+
+	private JFrame jFrame = null;
+
+	public JFrame getjFrame() {
+		return jFrame;
+	}
+
+	public void setjFrame(final JFrame jFrame) {
+		this.jFrame = jFrame;
+	}
 
 	public static void main(final String[] args) {
 		//
