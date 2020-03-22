@@ -1,7 +1,10 @@
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -11,10 +14,28 @@ import com.lowagie.text.pdf.PdfWriter;
 public class Main {
 
 	public static void main(final String[] args) {
-		// step 1: creation of a document-object
-		try (final Document document = new Document();
-				final Reader reader = new StringReader("<html><h1>H1</h1><h2>h2</h2><h3>h3</h3><h4>h4</h4></html>")) {
-			PdfWriter.getInstance(document, new FileOutputStream("parseHelloWorld.pdf"));
+		//
+		if (args == null) {
+			throw new IllegalArgumentException("args is null");
+		} else if (args.length == 0) {
+			throw new IllegalArgumentException("args is empty");
+		}
+		//
+		final String arg = args[0];
+		final File file = new File(arg);
+		if (!file.exists()) {
+			throw new IllegalArgumentException("File not found,file=" + arg);
+		}
+		//
+		File fileOutput = null;
+		if (StringUtils.lastIndexOf(arg, '.') > 0) {
+			fileOutput = new File(StringUtils.substringBeforeLast(arg, ".") + ".pdf");
+		} else {
+			fileOutput = new File(arg + ".pdf");
+		}
+		//
+		try (final Document document = new Document(); final Reader reader = new FileReader(file)) {
+			PdfWriter.getInstance(document, new FileOutputStream(fileOutput));
 			// step 2: we open the document
 			document.open();
 			// step 3: parsing the HTML document to convert it in PDF
