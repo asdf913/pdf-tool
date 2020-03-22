@@ -23,8 +23,8 @@ public class Main {
 		}
 		//
 		final String arg = args[0];
-		final File file = new File(arg);
-		if (!file.exists()) {
+		final File file = arg != null ? new File(arg) : null;
+		if (file == null || !file.exists()) {
 			throw new IllegalArgumentException("File not found,file=" + arg);
 		}
 		//
