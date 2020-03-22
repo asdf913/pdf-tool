@@ -7,7 +7,7 @@
 		<property name="jFrame">
 			<bean class="javax.swing.JFrame">
 				<property name="defaultCloseOperation"
-					value="#{T(javax.swing.JFrame).HIDE_ON_CLOSE}" />
+					value="#{T(javax.swing.JFrame).EXIT_ON_CLOSE}" />
 			</bean>
 		</property>
 	</bean>
