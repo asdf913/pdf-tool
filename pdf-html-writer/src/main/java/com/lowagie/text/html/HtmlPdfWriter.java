@@ -147,16 +147,17 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 				if (result == null) {
 					result = new LinkedHashMap<>();
 				}
+				//
 				try {
 					result.put(getName(f), f.getInt(null));
 				} catch (final IllegalAccessException e) {
 					e.printStackTrace();
 				}
-
-			}
-			//
+				//
+			} // for
+				//
 		} // if
-			///
+			//
 		return result;
 		//
 	}
