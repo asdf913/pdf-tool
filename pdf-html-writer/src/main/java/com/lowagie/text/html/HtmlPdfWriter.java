@@ -12,7 +12,7 @@ import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.pdf.PdfWriter;
 
-public class Main {
+public class HtmlPdfWriter {
 
 	public static void main(final String[] args) {
 		//
