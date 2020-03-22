@@ -7,12 +7,19 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 import javax.swing.AbstractButton;
+import javax.swing.JComboBox;
 import javax.swing.JTextField;
 
 import org.junit.jupiter.api.Assertions;
@@ -24,8 +31,12 @@ import com.lowagie.text.ExceptionConverter;
 
 class HtmlPdfWriterTtest {
 
+	private static final int ONE = 1;
+
 	private static Method METHOD_WRITE_HTML_FILE_TO_PDF_FILE, METHOD_ADD_ACTION_LISTENER, METHOD_ADD2, METHOD_ADD3,
-			METHOD_GET_SYSTEM_CLIP_BOARD, METHOD_SET_CONTENTS = null;
+			METHOD_GET_SYSTEM_CLIP_BOARD, METHOD_SET_CONTENTS, METHOD_GET_PERMISSIONS, METHOD_KEY_SET, METHOD_TO_ARRAY,
+			METHOD_SET_WIDTH, METHOD_GET, METHOD_GET_SELECTED_ITEM, METHOD_OR, METHOD_GET_BYTES, METHOD_LENGTH,
+			METHOD_SET_ENCRYPTION = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -48,18 +59,50 @@ class HtmlPdfWriterTtest {
 		(METHOD_SET_CONTENTS = clz.getDeclaredMethod("setContents", Clipboard.class, Transferable.class,
 				ClipboardOwner.class)).setAccessible(true);
 		//
+		(METHOD_GET_PERMISSIONS = clz.getDeclaredMethod("getPermissions", Field[].class)).setAccessible(true);
+		//
+		(METHOD_KEY_SET = clz.getDeclaredMethod("keySet", Map.class)).setAccessible(true);
+		//
+		(METHOD_TO_ARRAY = clz.getDeclaredMethod("toArray", Collection.class, Object[].class)).setAccessible(true);
+		//
+		(METHOD_SET_WIDTH = clz.getDeclaredMethod("setWidth", Integer.TYPE, Component[].class)).setAccessible(true);
+		//
+		(METHOD_GET = clz.getDeclaredMethod("get", Map.class, Object.class)).setAccessible(true);
+		//
+		(METHOD_GET_SELECTED_ITEM = clz.getDeclaredMethod("getSelectedItem", JComboBox.class)).setAccessible(true);
+		//
+		(METHOD_OR = clz.getDeclaredMethod("or", int[].class)).setAccessible(true);
+		//
+		(METHOD_GET_BYTES = clz.getDeclaredMethod("getBytes", String.class)).setAccessible(true);
+		//
+		(METHOD_LENGTH = clz.getDeclaredMethod("length", byte[].class, Integer.TYPE)).setAccessible(true);
+		//
+		(METHOD_SET_ENCRYPTION = clz.getDeclaredMethod("setEncryption", File.class, byte[].class, byte[].class,
+				Integer.TYPE, Integer.TYPE)).setAccessible(true);
+		//
 	}
+
+	private HtmlPdfWriter instance = null;
 
 	private Clipboard systemClipboard = null;
 
 	@BeforeEach
 	void beforeEach() throws Throwable {
+		//
+		instance = new HtmlPdfWriter();
+		//
 		systemClipboard = getSystemClipboard(Toolkit.getDefaultToolkit());
+		//
+	}
+
+	@Test
+	void testActionPerformed() {
+		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(new ActionEvent("", 0, null)));
 	}
 
 	@Test
 	void testAfterPropertiesSet() {
-		Assertions.assertDoesNotThrow(() -> new HtmlPdfWriter().afterPropertiesSet());
+		Assertions.assertDoesNotThrow(() -> instance.afterPropertiesSet());
 	}
 
 	@Test
@@ -145,10 +188,14 @@ class HtmlPdfWriterTtest {
 			} else if (obj instanceof Clipboard) {
 				return (Clipboard) obj;
 			}
-			throw new Throwable(obj.getClass() != null ? obj.getClass().toString() : null);
+			throw new Throwable(toString(obj.getClass()));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
+	}
+
+	private static String toString(final Object instance) {
+		return instance != null ? instance.toString() : null;
 	}
 
 	@Test
@@ -165,6 +212,198 @@ class HtmlPdfWriterTtest {
 			throws Throwable {
 		try {
 			METHOD_SET_CONTENTS.invoke(null, instance, contents, owner);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetPermissions() throws Throwable {
+		//
+		Assertions.assertNull(getPermissions(null));
+		Assertions.assertNull(getPermissions(new Field[] { null }));
+		//
+	}
+
+	private static int[] getPermissions(final Field[] input) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_PERMISSIONS.invoke(null, (Object) input);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof int[]) {
+				return (int[]) obj;
+			}
+			throw new Throwable(toString(obj.getClass()));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testKeySet() throws Throwable {
+		Assertions.assertNull(keySet(null));
+	}
+
+	private static <K> Set<K> keySet(final Map<K, ?> instance) throws Throwable {
+		try {
+			final Object obj = METHOD_KEY_SET.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof Set) {
+				return (Set) obj;
+			}
+			throw new Throwable(toString(obj.getClass()));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testToArray() throws Throwable {
+		//
+		Assertions.assertNull(toArray(null, null));
+		Assertions.assertNull(toArray(Collections.emptyList(), null));
+		//
+	}
+
+	private static <T> T[] toArray(final Collection<T> instance, final T[] array) throws Throwable {
+		try {
+			return (T[]) METHOD_TO_ARRAY.invoke(null, instance, array);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetWidth() {
+		//
+		Assertions.assertDoesNotThrow(() -> setWidth(1, (Component[]) null));
+		Assertions.assertDoesNotThrow(() -> setWidth(1, (Component) null));
+		//
+	}
+
+	private static void setWidth(final int width, final Component... cs) throws Throwable {
+		try {
+			METHOD_SET_WIDTH.invoke(null, width, cs);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGet() throws Throwable {
+		//
+		Assertions.assertNull(get(null, null));
+		//
+		final Object key = new Object(), value = new Object();
+		final Map<Object, Object> map = Collections.singletonMap(key, value);
+		Assertions.assertSame(value, get(map, key));
+		//
+	}
+
+	private static <V> V get(final Map<?, V> instance, final Object key) throws Throwable {
+		try {
+			return (V) METHOD_GET.invoke(null, instance, key);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetSelectedItem() throws Throwable {
+		//
+		Assertions.assertNull(getSelectedItem(null));
+		Assertions.assertNull(getSelectedItem(new JComboBox<>()));
+		//
+	}
+
+	private static Object getSelectedItem(final JComboBox<?> instance) throws Throwable {
+		try {
+			return METHOD_GET_SELECTED_ITEM.invoke(null, instance);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testOr() throws Throwable {
+		//
+		Assertions.assertThrows(IllegalArgumentException.class, () -> or(null));
+		//
+		Assertions.assertEquals(ONE, or(new int[] { ONE }));
+		//
+		final int two = 2;
+		Assertions.assertEquals(ONE + two, or(new int[] { ONE, two }));
+		//
+	}
+
+	private static int or(final int[] instance) throws Throwable {
+		try {
+			final Object obj = METHOD_OR.invoke(null, instance);
+			if (obj instanceof Integer) {
+				return ((Integer) obj).intValue();
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	private static Class<?> getClass(final Object instance) {
+		return instance != null ? instance.getClass() : null;
+	}
+
+	@Test
+	void testGetBytes() throws Throwable {
+		//
+		Assertions.assertNull(getBytes(null));
+		Assertions.assertArrayEquals(new byte[0], getBytes(""));
+		//
+	}
+
+	private static byte[] getBytes(final String instance) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_BYTES.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof byte[]) {
+				return (byte[]) obj;
+			}
+			throw new Throwable(toString(obj.getClass()));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testLength() throws Throwable {
+		//
+		Assertions.assertEquals(ONE, length(null, ONE));
+		Assertions.assertEquals(0, length(new byte[0], ONE));
+		//
+	}
+
+	private static int length(final byte[] instance, int defaultValue) throws Throwable {
+		try {
+			final Object obj = METHOD_LENGTH.invoke(null, instance, defaultValue);
+			if (obj instanceof Integer) {
+				return ((Integer) obj).intValue();
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetEncryption() {
+		Assertions.assertDoesNotThrow(() -> setEncryption(null, null, null, 0, 0));
+	}
+
+	private static void setEncryption(final File file, final byte[] userPassword, final byte[] ownerPassword,
+			final int permission, final int encryptionType) throws Throwable {
+		try {
+			METHOD_SET_ENCRYPTION.invoke(null, file, userPassword, ownerPassword, permission, encryptionType);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
