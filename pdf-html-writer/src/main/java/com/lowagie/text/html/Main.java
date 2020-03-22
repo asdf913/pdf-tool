@@ -1,3 +1,5 @@
+package com.lowagie.text.html;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -8,7 +10,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
-import com.lowagie.text.html.HtmlParser;
 import com.lowagie.text.pdf.PdfWriter;
 
 public class Main {
