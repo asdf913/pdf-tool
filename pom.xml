@@ -12,7 +12,7 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<junit.version>5.6.1</junit.version>
 		<pdfbox.version>2.0.19</pdfbox.version>
-		<spring.version>5.2.4.RELEASE</spring.version>
+		<spring.version>5.2.5.RELEASE</spring.version>
 	</properties>
 	<dependencies>
 		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api -->
