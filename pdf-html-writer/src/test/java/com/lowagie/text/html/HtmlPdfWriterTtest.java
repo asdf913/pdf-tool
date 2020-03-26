@@ -3,6 +3,7 @@ package com.lowagie.text.html;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
 import java.awt.datatransfer.StringSelection;
@@ -15,11 +16,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EventObject;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import javax.swing.AbstractButton;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JTextField;
 
 import org.junit.jupiter.api.Assertions;
@@ -27,6 +32,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.lowagie.text.Document;
 import com.lowagie.text.ExceptionConverter;
 
 class HtmlPdfWriterTtest {
@@ -36,15 +42,16 @@ class HtmlPdfWriterTtest {
 	private static Method METHOD_WRITE_HTML_FILE_TO_PDF_FILE, METHOD_ADD_ACTION_LISTENER, METHOD_ADD2, METHOD_ADD3,
 			METHOD_GET_SYSTEM_CLIP_BOARD, METHOD_SET_CONTENTS, METHOD_GET_PERMISSIONS, METHOD_KEY_SET, METHOD_TO_ARRAY,
 			METHOD_SET_WIDTH, METHOD_GET, METHOD_GET_SELECTED_ITEM, METHOD_OR, METHOD_GET_BYTES, METHOD_LENGTH,
-			METHOD_SET_ENCRYPTION = null;
+			METHOD_SET_ENCRYPTION, METHOD_SET_META_DATA, METHOD_CREATE_PROPERTIES_DIALOG, METHOD_GET_SOURCE,
+			METHOD_PACK, METHOD_SET_VISIBLE = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
 		//
 		final Class<?> clz = HtmlPdfWriter.class;
 		//
-		(METHOD_WRITE_HTML_FILE_TO_PDF_FILE = clz.getDeclaredMethod("writeHtmlFileToPdfFile", File.class, File.class))
-				.setAccessible(true);
+		(METHOD_WRITE_HTML_FILE_TO_PDF_FILE = clz.getDeclaredMethod("writeHtmlFileToPdfFile", File.class,
+				Consumer.class, File.class)).setAccessible(true);
 		//
 		(METHOD_ADD_ACTION_LISTENER = clz.getDeclaredMethod("addActionListener", ActionListener.class,
 				AbstractButton[].class)).setAccessible(true);
@@ -79,6 +86,16 @@ class HtmlPdfWriterTtest {
 		//
 		(METHOD_SET_ENCRYPTION = clz.getDeclaredMethod("setEncryption", File.class, byte[].class, byte[].class,
 				Integer.TYPE, Integer.TYPE)).setAccessible(true);
+		//
+		(METHOD_SET_META_DATA = clz.getDeclaredMethod("setMetaData", Document.class)).setAccessible(true);
+		//
+		(METHOD_CREATE_PROPERTIES_DIALOG = clz.getDeclaredMethod("createPropertiesDialog")).setAccessible(true);
+		//
+		(METHOD_GET_SOURCE = clz.getDeclaredMethod("getSource", EventObject.class)).setAccessible(true);
+		//
+		(METHOD_PACK = clz.getDeclaredMethod("pack", Window.class)).setAccessible(true);
+		//
+		(METHOD_SET_VISIBLE = clz.getDeclaredMethod("setVisible", Component.class, Boolean.TYPE)).setAccessible(true);
 		//
 	}
 
@@ -117,12 +134,17 @@ class HtmlPdfWriterTtest {
 
 	@Test
 	void testWriteHtmlFileToPdfFile() {
-		Assertions.assertThrows(ExceptionConverter.class, () -> writeHtmlFileToPdfFile(null, null));
+		//
+		Assertions.assertThrows(ExceptionConverter.class, () -> writeHtmlFileToPdfFile(null, null, null));
+		Assertions.assertThrows(ExceptionConverter.class, () -> writeHtmlFileToPdfFile(null, d -> {
+		}, null));
+		//
 	}
 
-	private static void writeHtmlFileToPdfFile(final File input, final File output) throws Throwable {
+	private static void writeHtmlFileToPdfFile(final File input, final Consumer<Document> consumer, final File output)
+			throws Throwable {
 		try {
-			METHOD_WRITE_HTML_FILE_TO_PDF_FILE.invoke(null, input, output);
+			METHOD_WRITE_HTML_FILE_TO_PDF_FILE.invoke(null, input, consumer, output);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -404,6 +426,89 @@ class HtmlPdfWriterTtest {
 			final int permission, final int encryptionType) throws Throwable {
 		try {
 			METHOD_SET_ENCRYPTION.invoke(null, file, userPassword, ownerPassword, permission, encryptionType);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetMetaData() {
+		//
+		Assertions.assertDoesNotThrow(() -> setMetaData(null));
+		//
+		try (final Document document = new Document()) {
+			Assertions.assertDoesNotThrow(() -> setMetaData(document));
+		} // try
+			//
+	}
+
+	private void setMetaData(final Document document) throws Throwable {
+		try {
+			METHOD_SET_META_DATA.invoke(instance, document);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testCreatePropertiesDialog() throws Throwable {
+		Assertions.assertNotNull(createPropertiesDialog());
+	}
+
+	private JDialog createPropertiesDialog() throws Throwable {
+		try {
+			final Object obj = METHOD_CREATE_PROPERTIES_DIALOG.invoke(instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof JDialog) {
+				return (JDialog) obj;
+			}
+			throw new Throwable(toString(obj.getClass()));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetSource() throws Throwable {
+		Assertions.assertNull(getSource(null));
+	}
+
+	private static Object getSource(final EventObject instance) throws Throwable {
+		try {
+			return METHOD_GET_SOURCE.invoke(null, instance);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testPack() {
+		//
+		Assertions.assertDoesNotThrow(() -> pack(null));
+		Assertions.assertDoesNotThrow(() -> pack(new JFrame()));
+		//
+	}
+
+	private static void pack(final Window instance) throws Throwable {
+		try {
+			METHOD_PACK.invoke(null, instance);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetVisible() {
+		//
+		Assertions.assertDoesNotThrow(() -> setVisible(null, false));
+		Assertions.assertDoesNotThrow(() -> setVisible(new JTextField(), false));
+		//
+	}
+
+	private static void setVisible(final Component instance, final boolean flag) throws Throwable {
+		try {
+			METHOD_SET_VISIBLE.invoke(null, instance, flag);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

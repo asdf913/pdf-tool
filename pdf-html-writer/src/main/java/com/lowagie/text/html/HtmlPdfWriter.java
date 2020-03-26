@@ -4,6 +4,7 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
 import java.awt.datatransfer.StringSelection;
@@ -19,15 +20,20 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EventObject;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -36,15 +42,18 @@ import java.util.stream.Stream;
 import javax.swing.AbstractButton;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextComponentUtil;
 import javax.swing.JTextField;
 import javax.swing.text.JTextComponent;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 
@@ -53,6 +62,8 @@ import com.lowagie.text.DocumentException;
 import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.PdfStamper;
 import com.lowagie.text.pdf.PdfWriter;
+
+import net.miginfocom.swing.MigLayout;
 
 public class HtmlPdfWriter implements ActionListener, InitializingBean {
 
@@ -164,11 +175,26 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 
 	private JFrame jFrame = null;
 
-	private JTextComponent pfUser, pfOwner, tfOutput = null;
+	private JTextComponent pfUser, pfOwner, tfOutput, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator,
+			tfProducer = null;
 
 	private JComboBox<String> encryptionTypes = null;
 
-	private AbstractButton btnExecute, btnCopy = null;
+	private AbstractButton btnProperties, btnExecute, btnCopy = null;
+
+	private String title = null;
+
+	private String author = null;
+
+	private String subject = null;
+
+	private String keywords = null;
+
+	private String creator = null;
+
+	private String producer = null;
+
+	private Map<Method, JTextComponent> permissionMethodJTextComponentMap = null;
 
 	public JFrame getjFrame() {
 		return jFrame;
@@ -195,6 +221,11 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		add(container, new JLabel("Owner Pasword"));
 		add(container, pfOwner = new JPasswordField(), WRAP);
 		//
+		add(container, new JLabel(""));
+		final JPanel panel = new JPanel();
+		add(panel, btnProperties = new JButton("Properties"));
+		add(container, panel, WRAP);
+		//
 		add(container, new JLabel());
 		add(container, btnExecute = new JButton("Select HTML file"), WRAP);
 		//
@@ -203,7 +234,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		tfOutput.setEditable(false);
 		add(container, btnCopy = new JButton("Copy"), WRAP);
 		//
-		addActionListener(this, btnExecute, btnCopy);
+		addActionListener(this, btnProperties, btnExecute, btnCopy);
 		//
 		setWidth(PREFERRED_WIDTH, pfOwner, pfUser, tfOutput);
 		//
@@ -273,7 +304,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 	@Override
 	public void actionPerformed(final ActionEvent evt) {
 		//
-		final Object source = evt != null ? evt.getSource() : null;
+		final Object source = getSource(evt);
 		//
 		if (Objects.deepEquals(source, btnExecute)) {
 			//
@@ -294,7 +325,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 				try {
 					//
 					JTextComponentUtil.setText(tfOutput, null);
-					writeHtmlFileToPdfFile(jfc.getSelectedFile(), fileOutput);
+					writeHtmlFileToPdfFile(jfc.getSelectedFile(), this::setMetaData, fileOutput);
 					//
 					final byte[] userPassword = getBytes(JTextComponentUtil.getText(pfUser));
 					final byte[] ownerPassword = getBytes(JTextComponentUtil.getText(pfOwner));
@@ -318,8 +349,103 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 			setContents(getSystemClipboard(Toolkit.getDefaultToolkit()),
 					new StringSelection(JTextComponentUtil.getText(tfOutput)), null);
 			//
+		} else if (Objects.equals(source, btnProperties)) {
+			//
+			final JDialog dialog = createPropertiesDialog();
+			//
+			pack(dialog);
+			setVisible(dialog, true);
+			//
 		}
 		//
+	}
+
+	private static Object getSource(final EventObject instance) {
+		return instance != null ? instance.getSource() : null;
+	}
+
+	private static void pack(final Window instance) {
+		if (instance != null) {
+			instance.pack();
+		}
+	}
+
+	private static void setVisible(final Component instance, final boolean flag) {
+		if (instance != null) {
+			instance.setVisible(flag);
+		}
+	}
+
+	private Map<Method, JTextComponent> getPermissionMethodJTextComponentMap() {
+		//
+		if (permissionMethodJTextComponentMap == null) {
+			//
+			final Class<?> clz = Document.class;
+			final Class<?>[] stringClassOnly = new Class<?>[] { String.class };
+			//
+			try {
+				//
+				(permissionMethodJTextComponentMap = new LinkedHashMap<>())
+						.put(clz.getDeclaredMethod("addAuthor", stringClassOnly), tfAuthor);
+				permissionMethodJTextComponentMap.put(clz.getDeclaredMethod("addCreator", stringClassOnly), tfCreator);
+				permissionMethodJTextComponentMap.put(clz.getDeclaredMethod("addKeywords", stringClassOnly),
+						tfKeywords);
+				permissionMethodJTextComponentMap.put(clz.getDeclaredMethod("addProducer", stringClassOnly),
+						tfProducer);
+				permissionMethodJTextComponentMap.put(clz.getDeclaredMethod("addSubject", stringClassOnly), tfSubject);
+				permissionMethodJTextComponentMap.put(clz.getDeclaredMethod("addTitle", stringClassOnly), tfTitle);
+				//
+			} catch (final NoSuchMethodException e) {
+				e.printStackTrace();
+			}
+			//
+		}
+		//
+		return permissionMethodJTextComponentMap;
+		//
+	}
+
+	private void setMetaData(final Document document) {
+		//
+		final Map<Method, JTextComponent> map = getPermissionMethodJTextComponentMap();
+		//
+		if (map != null) {
+			//
+			Method m = null;
+			String input = null;
+			//
+			for (final Entry<Method, JTextComponent> entry : map.entrySet()) {
+				//
+				if (entry == null || (m = entry.getKey()) == null) {
+					continue;
+				} // skip null
+					//
+				m.setAccessible(true);
+				//
+				try {
+					//
+					input = StringUtils.defaultString(JTextComponentUtil.getText(entry.getValue()), "");
+					//
+					if (Modifier.isStatic(m.getModifiers())) {
+						m.invoke(null, input);
+					} else if (document != null) {
+						m.invoke(document, input);
+					}
+					//
+				} catch (final IllegalAccessException e) {
+					e.printStackTrace();
+				} catch (final InvocationTargetException e) {
+					final Throwable targetException = (ObjectUtils.defaultIfNull(e.getTargetException(), e));
+					if (targetException instanceof RuntimeException) {
+						throw (RuntimeException) targetException;
+					}
+					targetException.printStackTrace();
+				}
+				//
+			} // for
+				//
+		} // if
+			//
 	}
 
 	private static <V> V get(final Map<?, V> instance, final Object key) {
@@ -387,14 +513,15 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		}
 		//
 		try {
-			writeHtmlFileToPdfFile(file, fileOutput);
+			writeHtmlFileToPdfFile(file, null, fileOutput);
 		} catch (final DocumentException | IOException e) {
 			e.printStackTrace();
 		}
 		//
 	}
 
-	private static void writeHtmlFileToPdfFile(final File input, final File output) throws IOException {
+	private static void writeHtmlFileToPdfFile(final File input, final Consumer<Document> consumer, final File output)
+			throws IOException {
 		//
 		try (final Document document = new Document();
 				final Reader reader = input != null ? new FileReader(input) : null;
@@ -403,6 +530,9 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 			PdfWriter.getInstance(document, os);
 			//
 			document.open();
+			if (consumer != null) {
+				consumer.accept(document);
+			}
 			//
 			HtmlParser.parse(document, reader);
 			//
@@ -425,6 +555,36 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 			//
 		} // try
 			//
+	}
+
+	private JDialog createPropertiesDialog() {
+		//
+		final JDialog dialog = new JDialog();
+		dialog.setTitle("Properties");
+		dialog.setLayout(new MigLayout());
+		//
+		add(dialog, new JLabel("Title"));
+		add(dialog, tfTitle = ObjectUtils.defaultIfNull(tfTitle, new JTextField(title)), WRAP);
+		//
+		add(dialog, new JLabel("Author"));
+		add(dialog, tfAuthor = ObjectUtils.defaultIfNull(tfAuthor, new JTextField(author)), WRAP);
+		//
+		add(dialog, new JLabel("Subject"));
+		add(dialog, tfSubject = ObjectUtils.defaultIfNull(tfSubject, new JTextField(subject)), WRAP);
+		//
+		add(dialog, new JLabel("Keywords"));
+		add(dialog, tfKeywords = ObjectUtils.defaultIfNull(tfKeywords, new JTextField(keywords)), WRAP);
+		//
+		add(dialog, new JLabel("Creator"));
+		add(dialog, tfCreator = ObjectUtils.defaultIfNull(tfCreator, new JTextField(creator)), WRAP);
+		//
+		add(dialog, new JLabel("Producer"));
+		add(dialog, tfProducer = ObjectUtils.defaultIfNull(tfProducer, new JTextField(producer)), WRAP);
+		//
+		setWidth(200, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator, tfProducer);
+		//
+		return dialog;
+		//
 	}
 
 }
