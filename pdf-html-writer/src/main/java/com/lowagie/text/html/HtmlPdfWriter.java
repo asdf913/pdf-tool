@@ -247,7 +247,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 
 	private void init(final Container container) {
 		//
-		add(container, new JLabel("User Pasword"));
+		add(container, new JLabel("Encryption"));
 		add(container, encryptionTypes = new JComboBox<>(
 				ArrayUtils.insert(0, toArray(keySet(ENCRYPTION_TYPES), new String[0]), (String) null)), WRAP);
 		//
