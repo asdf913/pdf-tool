@@ -204,6 +204,30 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		this.jFrame = jFrame;
 	}
 
+	public void setTitle(final String title) {
+		this.title = title;
+	}
+
+	public void setAuthor(final String author) {
+		this.author = author;
+	}
+
+	public void setSubject(final String subject) {
+		this.subject = subject;
+	}
+
+	public void setKeywords(final String keywords) {
+		this.keywords = keywords;
+	}
+
+	public void setCreator(final String creator) {
+		this.creator = creator;
+	}
+
+	public void setProducer(final String producer) {
+		this.producer = producer;
+	}
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		init(jFrame);
