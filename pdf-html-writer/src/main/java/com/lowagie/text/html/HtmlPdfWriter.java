@@ -182,6 +182,10 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 
 	private AbstractButton btnProperties, btnExecute, btnCopy = null;
 
+	private String userPassword = null;
+
+	private String ownerPassword = null;
+
 	private String title = null;
 
 	private String author = null;
@@ -198,6 +202,14 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 
 	public JFrame getjFrame() {
 		return jFrame;
+	}
+
+	public void setUserPassword(final String userPassword) {
+		this.userPassword = userPassword;
+	}
+
+	public void setOwnerPassword(final String ownerPassword) {
+		this.ownerPassword = ownerPassword;
 	}
 
 	public void setjFrame(final JFrame jFrame) {
@@ -240,10 +252,10 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 				ArrayUtils.insert(0, toArray(keySet(ENCRYPTION_TYPES), new String[0]), (String) null)), WRAP);
 		//
 		add(container, new JLabel("User Pasword"));
-		add(container, pfUser = new JPasswordField(), WRAP);
+		add(container, pfUser = new JPasswordField(userPassword), WRAP);
 		//
 		add(container, new JLabel("Owner Pasword"));
-		add(container, pfOwner = new JPasswordField(), WRAP);
+		add(container, pfOwner = new JPasswordField(ownerPassword), WRAP);
 		//
 		add(container, new JLabel(""));
 		final JPanel panel = new JPanel();

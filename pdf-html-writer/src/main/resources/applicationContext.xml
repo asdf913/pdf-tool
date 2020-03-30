@@ -24,6 +24,9 @@
 				<property name="title" value="${frame.title}" />
 			</bean>
 		</property>
+		<!-- password -->
+		<property name="userPassword" value="${userPassword}" />
+		<property name="ownerPassword" value="${ownerPassword}" />
 		<!-- properties -->
 		<property name="title" value="${title}" />
 		<property name="author" value="${author}" />
