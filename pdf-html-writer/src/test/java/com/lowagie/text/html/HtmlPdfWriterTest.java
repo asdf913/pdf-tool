@@ -10,6 +10,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.Dimension2D;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -35,7 +36,7 @@ import org.junit.jupiter.api.Test;
 import com.lowagie.text.Document;
 import com.lowagie.text.ExceptionConverter;
 
-class HtmlPdfWriterTtest {
+class HtmlPdfWriterTest {
 
 	private static final int ONE = 1;
 
@@ -43,7 +44,7 @@ class HtmlPdfWriterTtest {
 			METHOD_GET_SYSTEM_CLIP_BOARD, METHOD_SET_CONTENTS, METHOD_GET_PERMISSIONS, METHOD_KEY_SET, METHOD_TO_ARRAY,
 			METHOD_SET_WIDTH, METHOD_GET, METHOD_GET_SELECTED_ITEM, METHOD_OR, METHOD_GET_BYTES, METHOD_LENGTH,
 			METHOD_SET_ENCRYPTION, METHOD_SET_META_DATA, METHOD_CREATE_PROPERTIES_DIALOG, METHOD_GET_SOURCE,
-			METHOD_PACK, METHOD_SET_VISIBLE = null;
+			METHOD_PACK, METHOD_SET_VISIBLE, METHOD_GET_WIDTH = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -96,6 +97,8 @@ class HtmlPdfWriterTtest {
 		(METHOD_PACK = clz.getDeclaredMethod("pack", Window.class)).setAccessible(true);
 		//
 		(METHOD_SET_VISIBLE = clz.getDeclaredMethod("setVisible", Component.class, Boolean.TYPE)).setAccessible(true);
+		//
+		(METHOD_GET_WIDTH = clz.getDeclaredMethod("getWidth", Dimension2D.class, Double.TYPE)).setAccessible(true);
 		//
 	}
 
@@ -210,7 +213,7 @@ class HtmlPdfWriterTtest {
 			} else if (obj instanceof Clipboard) {
 				return (Clipboard) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -255,7 +258,7 @@ class HtmlPdfWriterTtest {
 			} else if (obj instanceof int[]) {
 				return (int[]) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -274,7 +277,7 @@ class HtmlPdfWriterTtest {
 			} else if (obj instanceof Set) {
 				return (Set) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -391,7 +394,7 @@ class HtmlPdfWriterTtest {
 			} else if (obj instanceof byte[]) {
 				return (byte[]) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -463,7 +466,7 @@ class HtmlPdfWriterTtest {
 			} else if (obj instanceof JDialog) {
 				return (JDialog) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -509,6 +512,26 @@ class HtmlPdfWriterTtest {
 	private static void setVisible(final Component instance, final boolean flag) throws Throwable {
 		try {
 			METHOD_SET_VISIBLE.invoke(null, instance, flag);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetWidth() throws Throwable {
+		//
+		final double defaultValue = 0.12;
+		Assertions.assertEquals(defaultValue, getWidth(null, defaultValue));
+		//
+	}
+
+	private static double getWidth(final Dimension2D instance, final double defaultValue) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_WIDTH.invoke(null, instance, defaultValue);
+			if (obj instanceof Double) {
+				return ((Double) obj).doubleValue();
+			}
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

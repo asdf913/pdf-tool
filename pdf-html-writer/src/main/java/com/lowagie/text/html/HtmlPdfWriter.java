@@ -11,6 +11,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.Dimension2D;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -255,21 +256,23 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 
 	private void init(final Container container) {
 		//
+		final String wrap = String.format("span %1$s,%2$s", 2, WRAP);
+		//
 		add(container, new JLabel("Encryption"));
 		add(container, encryptionTypes = new JComboBox<>(
-				ArrayUtils.insert(0, toArray(keySet(ENCRYPTION_TYPES), new String[0]), (String) null)), WRAP);
+				ArrayUtils.insert(0, toArray(keySet(ENCRYPTION_TYPES), new String[0]), (String) null)), wrap);
 		JComboBoxUtil.setSelectedItem(encryptionTypes, encryptionType);
 		//
 		add(container, new JLabel("User Pasword"));
-		add(container, pfUser = new JPasswordField(userPassword), WRAP);
+		add(container, pfUser = new JPasswordField(userPassword), wrap);
 		//
 		add(container, new JLabel("Owner Pasword"));
-		add(container, pfOwner = new JPasswordField(ownerPassword), WRAP);
+		add(container, pfOwner = new JPasswordField(ownerPassword), wrap);
 		//
 		add(container, new JLabel(""));
 		final JPanel panel = new JPanel();
 		add(panel, btnProperties = new JButton("Properties"));
-		add(container, panel, WRAP);
+		add(container, panel, wrap);
 		//
 		add(container, new JLabel());
 		add(container, btnExecute = new JButton("Select HTML file"), WRAP);
@@ -281,8 +284,13 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		//
 		addActionListener(this, btnProperties, btnExecute, btnCopy);
 		//
-		setWidth(PREFERRED_WIDTH, pfOwner, pfUser, tfOutput);
+		setWidth(PREFERRED_WIDTH, pfOwner, pfUser);
+		setWidth(PREFERRED_WIDTH - (int) getWidth(getPreferredSize(btnCopy), 0), tfOutput);
 		//
+	}
+
+	private static double getWidth(final Dimension2D instance, final double defaultValue) {
+		return instance != null ? instance.getWidth() : defaultValue;
 	}
 
 	private static <K> Set<K> keySet(final Map<K, ?> instance) {
