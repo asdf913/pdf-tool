@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import javax.swing.AbstractButton;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComboBoxUtil;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -182,6 +183,8 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 
 	private AbstractButton btnProperties, btnExecute, btnCopy = null;
 
+	private String encryptionType = null;
+
 	private String userPassword = null;
 
 	private String ownerPassword = null;
@@ -202,6 +205,10 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 
 	public JFrame getjFrame() {
 		return jFrame;
+	}
+
+	public void setEncryptionType(final String encryptionType) {
+		this.encryptionType = encryptionType;
 	}
 
 	public void setUserPassword(final String userPassword) {
@@ -250,6 +257,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		add(container, new JLabel("Encryption"));
 		add(container, encryptionTypes = new JComboBox<>(
 				ArrayUtils.insert(0, toArray(keySet(ENCRYPTION_TYPES), new String[0]), (String) null)), WRAP);
+		JComboBoxUtil.setSelectedItem(encryptionTypes, encryptionType);
 		//
 		add(container, new JLabel("User Pasword"));
 		add(container, pfUser = new JPasswordField(userPassword), WRAP);

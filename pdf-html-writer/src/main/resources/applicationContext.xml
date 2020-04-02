@@ -24,6 +24,8 @@
 				<property name="title" value="${frame.title}" />
 			</bean>
 		</property>
+		<!-- encryption type -->
+		<property name="encryptionType" value="${encryptionType}" />
 		<!-- password -->
 		<property name="userPassword" value="${userPassword}" />
 		<property name="ownerPassword" value="${ownerPassword}" />
