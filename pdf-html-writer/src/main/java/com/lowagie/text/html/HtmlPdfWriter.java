@@ -47,6 +47,7 @@ import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextComponentUtil;
@@ -373,8 +374,14 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 					//
 					final byte[] userPassword = getBytes(JTextComponentUtil.getText(pfUser));
 					final byte[] ownerPassword = getBytes(JTextComponentUtil.getText(pfOwner));
-					//
 					final Integer encryptionType = get(ENCRYPTION_TYPES, getSelectedItem(encryptionTypes));
+					//
+					final boolean passwordSet = length(userPassword, 0) > 0 || length(ownerPassword, 0) > 0;
+					if (passwordSet && encryptionType == null) {
+						JOptionPane.showMessageDialog(null, "Please select an encryption type");
+						return;
+					}
+					//
 					if (encryptionType != null && (length(userPassword, 0) > 0 || length(ownerPassword, 0) > 0)) {
 						setEncryption(fileOutput, userPassword, ownerPassword, or(PERMISSIONS),
 								encryptionType.intValue());
