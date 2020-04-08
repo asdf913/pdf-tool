@@ -177,7 +177,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 					result.put(getName(f), f.getInt(null));
 				} catch (final IllegalAccessException e) {
 					LOG.error(e.getMessage(), e);
-					}
+				}
 				//
 			} // for
 				//
@@ -442,6 +442,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 						//
 						AllowPermissionField allowPermissionField = null;
 						int[] permission = null;
+						Object selectedItem = null;
 						//
 						for (int i = 0; fs != null && i < fs.size(); i++) {
 							//
@@ -456,13 +457,16 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 								continue;
 							}
 							//
-							if (Objects.equals(Boolean.TRUE, cb.getSelectedItem())) {
+							if (Objects.equals(Boolean.TRUE, selectedItem = cb.getSelectedItem())) {
 								if (permission == null) {
 									permission = new int[0];
 								}
 								permission = ArrayUtils.add(permission, allowPermissionField.value());
-							} else {
-								System.out.println();
+							} else if (Objects.equals(Boolean.FALSE, selectedItem)) {
+								if (permission == null) {
+									permission = new int[0];
+								}
+								permission = ArrayUtils.add(permission, 0);
 							}
 							//
 						}
