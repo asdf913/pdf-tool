@@ -20,6 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
@@ -36,11 +40,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.swing.AbstractButton;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComboBoxUtil;
@@ -58,6 +65,8 @@ import javax.swing.text.JTextComponent;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 
 import com.lowagie.text.Document;
@@ -69,6 +78,8 @@ import com.lowagie.text.pdf.PdfWriter;
 import net.miginfocom.swing.MigLayout;
 
 public class HtmlPdfWriter implements ActionListener, InitializingBean {
+
+	private static final Logger LOG = LoggerFactory.getLogger(HtmlPdfWriter.class);
 
 	private static final String WRAP = "wrap";
 
@@ -115,7 +126,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 			try {
 				result = ArrayUtils.add(result, f.getInt(null));
 			} catch (final IllegalAccessException e) {
-				e.printStackTrace();
+				LOG.error(e.getMessage(), e);
 			}
 			//
 		} // for
@@ -165,8 +176,8 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 				try {
 					result.put(getName(f), f.getInt(null));
 				} catch (final IllegalAccessException e) {
-					e.printStackTrace();
-				}
+					LOG.error(e.getMessage(), e);
+					}
 				//
 			} // for
 				//
@@ -183,7 +194,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 
 	private JComboBox<String> encryptionTypes = null;
 
-	private AbstractButton btnProperties, btnExecute, btnCopy = null;
+	private AbstractButton btnProperties, btnPermission, btnExecute, btnCopy = null;
 
 	private String encryptionType = null;
 
@@ -202,6 +213,38 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 	private String creator = null;
 
 	private String producer = null;
+
+	private JComboBox<Boolean> cbAllowAll = null;
+
+	@Retention(value = RetentionPolicy.RUNTIME)
+	@Target(value = { ElementType.FIELD })
+	private @interface AllowPermissionField {
+		int value();
+	}
+
+	@AllowPermissionField(PdfWriter.ALLOW_ASSEMBLY)
+	private ComboBoxModel<Boolean> allowAssembly = null;
+
+	@AllowPermissionField(PdfWriter.ALLOW_COPY)
+	private ComboBoxModel<Boolean> allowCopy = null;
+
+	@AllowPermissionField(PdfWriter.ALLOW_DEGRADED_PRINTING)
+	private ComboBoxModel<Boolean> allowDegradePrinting = null;
+
+	@AllowPermissionField(PdfWriter.ALLOW_FILL_IN)
+	private ComboBoxModel<Boolean> allowFillin = null;
+
+	@AllowPermissionField(PdfWriter.ALLOW_MODIFY_ANNOTATIONS)
+	private ComboBoxModel<Boolean> allowModifyAnnotations = null;
+
+	@AllowPermissionField(PdfWriter.ALLOW_MODIFY_CONTENTS)
+	private ComboBoxModel<Boolean> allowModifyContents = null;
+
+	@AllowPermissionField(PdfWriter.ALLOW_PRINTING)
+	private ComboBoxModel<Boolean> allowPrinting = null;
+
+	@AllowPermissionField(PdfWriter.ALLOW_SCREENREADERS)
+	private ComboBoxModel<Boolean> allowScreenReaders = null;
 
 	private Map<Method, JTextComponent> permissionMethodJTextComponentMap = null;
 
@@ -272,6 +315,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		add(container, new JLabel(""));
 		final JPanel panel = new JPanel();
 		add(panel, btnProperties = new JButton("Properties"));
+		add(panel, btnPermission = new JButton("Permission"));
 		add(container, panel, wrap);
 		//
 		add(container, new JLabel());
@@ -282,7 +326,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		tfOutput.setEditable(false);
 		add(container, btnCopy = new JButton("Copy"), WRAP);
 		//
-		addActionListener(this, btnProperties, btnExecute, btnCopy);
+		addActionListener(this, btnProperties, btnPermission, btnExecute, btnCopy);
 		//
 		setWidth(PREFERRED_WIDTH, pfOwner, pfUser);
 		setWidth(PREFERRED_WIDTH - (int) getWidth(getPreferredSize(btnCopy), 0), tfOutput);
@@ -359,7 +403,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		//
 		final Object source = getSource(evt);
 		//
-		if (Objects.deepEquals(source, btnExecute)) {
+		if (Objects.equals(source, btnExecute)) {
 			//
 			final JFileChooser jfc = new JFileChooser(".");
 			//
@@ -391,19 +435,52 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 					}
 					//
 					if (encryptionType != null && (length(userPassword, 0) > 0 || length(ownerPassword, 0) > 0)) {
-						setEncryption(fileOutput, userPassword, ownerPassword, or(PERMISSIONS),
-								encryptionType.intValue());
+						//
+						final List<Field> fs = getAllowPermissionFields(getClass().getDeclaredFields());
+						Field f = null;
+						ComboBoxModel<?> cb = null;
+						//
+						AllowPermissionField allowPermissionField = null;
+						int[] permission = null;
+						//
+						for (int i = 0; fs != null && i < fs.size(); i++) {
+							//
+							if ((f = fs.get(i)) == null || !f.isAnnotationPresent(AllowPermissionField.class)
+									|| (allowPermissionField = f.getAnnotation(AllowPermissionField.class)) == null) {
+								continue;
+							}
+							//
+							f.setAccessible(true);
+							//
+							if ((cb = cast(ComboBoxModel.class, f.get(this))) == null) {
+								continue;
+							}
+							//
+							if (Objects.equals(Boolean.TRUE, cb.getSelectedItem())) {
+								if (permission == null) {
+									permission = new int[0];
+								}
+								permission = ArrayUtils.add(permission, allowPermissionField.value());
+							} else {
+								System.out.println();
+							}
+							//
+						}
+						//
+						setEncryption(fileOutput, userPassword, ownerPassword,
+								or(ObjectUtils.defaultIfNull(permission, PERMISSIONS)), encryptionType.intValue());
+						//
 					}
 					//
 					JTextComponentUtil.setText(tfOutput, fileOutput.getAbsolutePath());
 					//
-				} catch (final IOException e) {
-					e.printStackTrace();
+				} catch (final IOException | IllegalAccessException e) {
+					LOG.error(e.getMessage(), e);
 				}
 				//
 			} // if
 				//
-		} else if (Objects.deepEquals(source, btnCopy)) {
+		} else if (Objects.equals(source, btnCopy)) {
 			//
 			setContents(getSystemClipboard(Toolkit.getDefaultToolkit()),
 					new StringSelection(JTextComponentUtil.getText(tfOutput)), null);
@@ -415,8 +492,51 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 			pack(dialog);
 			setVisible(dialog, true);
 			//
+		} else if (Objects.equals(source, btnPermission)) {
+			//
+			final JDialog dialog = createPermissionDialog();
+			//
+			pack(dialog);
+			setVisible(dialog, true);
+			//
+		} else if (Objects.equals(source, cbAllowAll)) {
+			//
+			final Object selected = getSelectedItem(cbAllowAll);
+			//
+			final List<Field> fs = getAllowPermissionFields(getClass().getDeclaredFields());
+			//
+			Field f = null;
+			ComboBoxModel<?> cb = null;
+			//
+			for (int i = 0; fs != null && i < fs.size(); i++) {
+				//
+				if ((f = fs.get(i)) == null) {
+					continue;
+				} // skip null
+					//
+				f.setAccessible(true);
+				//
+				try {
+					if ((cb = cast(ComboBoxModel.class, f.get(this))) != null) {
+						cb.setSelectedItem(selected);
+					}
+				} catch (final IllegalAccessException e) {
+					LOG.error(e.getMessage(), e);
+				}
+				//
+			} // for
+				//
 		}
 		//
+	}
+
+	private static List<Field> getAllowPermissionFields(final Field[] fs) {
+		return collect(filter(stream(fs), f -> f != null && Objects.equals(f.getType(), ComboBoxModel.class)
+				&& f.isAnnotationPresent(AllowPermissionField.class)), Collectors.toList());
+	}
+
+	private static <T> T cast(final Class<T> clz, final Object instance) {
+		return clz != null && clz.isInstance(instance) ? clz.cast(instance) : null;
 	}
 
 	private static Object getSource(final EventObject instance) {
@@ -455,7 +575,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 				permissionMethodJTextComponentMap.put(clz.getDeclaredMethod("addTitle", stringClassOnly), tfTitle);
 				//
 			} catch (final NoSuchMethodException e) {
-				e.printStackTrace();
+				LOG.error(e.getMessage(), e);
 			}
 			//
 		}
@@ -492,13 +612,15 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 					}
 					//
 				} catch (final IllegalAccessException e) {
-					e.printStackTrace();
+					LOG.error(e.getMessage(), e);
 				} catch (final InvocationTargetException e) {
+					//
 					final Throwable targetException = (ObjectUtils.defaultIfNull(e.getTargetException(), e));
 					if (targetException instanceof RuntimeException) {
 						throw (RuntimeException) targetException;
 					}
-					targetException.printStackTrace();
+					LOG.error(targetException.getMessage(), targetException);
+					//
 				}
 				//
 			} // for
@@ -574,7 +696,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		try {
 			writeHtmlFileToPdfFile(file, null, fileOutput);
 		} catch (final DocumentException | IOException e) {
-			e.printStackTrace();
+			LOG.error(e.getMessage(), e);
 		}
 		//
 	}
@@ -643,6 +765,94 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		setWidth(200, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator, tfProducer);
 		//
 		return dialog;
+		//
+	}
+
+	private JDialog createPermissionDialog() {
+		//
+		final JDialog dialog = new JDialog();
+		dialog.setTitle("Permission");
+		dialog.setLayout(new MigLayout());
+		//
+		final Predicate<Object> notNull = x -> x != null;
+		//
+		final Boolean[] booleans = new Boolean[] { null, Boolean.FALSE, Boolean.TRUE };
+		//
+		// all
+		//
+		add(dialog, new JLabel("All"));
+		if (cbAllowAll == null) {
+			cbAllowAll = new JComboBox<>(new DefaultComboBoxModel<>(booleans));
+		}
+		add(dialog, cbAllowAll, WRAP);
+		cbAllowAll.addActionListener(this);
+		//
+		// assembly
+		//
+		add(dialog, new JLabel("Assembly"));
+		add(dialog,
+				new JComboBox<>(
+						allowAssembly = testAndGet(notNull, allowAssembly, () -> new DefaultComboBoxModel<>(booleans))),
+				WRAP);
+		//
+		// copy
+		//
+		add(dialog, new JLabel("Copy"));
+		add(dialog,
+				new JComboBox<>(allowCopy = testAndGet(notNull, allowCopy, () -> new DefaultComboBoxModel<>(booleans))),
+				WRAP);
+		//
+		// degrade printing
+		//
+		add(dialog, new JLabel("Degrade Printing"));
+		add(dialog, new JComboBox<>(allowDegradePrinting = testAndGet(notNull, allowDegradePrinting,
+				() -> new DefaultComboBoxModel<>(booleans))), WRAP);
+		//
+		// fill in
+		//
+		add(dialog, new JLabel("Fill In"));
+		add(dialog,
+				new JComboBox<>(
+						allowFillin = testAndGet(notNull, allowFillin, () -> new DefaultComboBoxModel<>(booleans))),
+				WRAP);
+		//
+		// modify annotations
+		//
+		add(dialog, new JLabel("Modify Annotations"));
+		add(dialog, new JComboBox<>(allowModifyAnnotations = testAndGet(notNull, allowModifyAnnotations,
+				() -> new DefaultComboBoxModel<>(booleans))), WRAP);
+		//
+		// modify contents
+		//
+		add(dialog, new JLabel("Modify Contents"));
+		add(dialog, new JComboBox<>(allowModifyContents = testAndGet(notNull, allowModifyContents,
+				() -> new DefaultComboBoxModel<>(booleans))), WRAP);
+		//
+		// printing
+		//
+		add(dialog, new JLabel("Printing"));
+		add(dialog,
+				new JComboBox<>(
+						allowPrinting = testAndGet(notNull, allowPrinting, () -> new DefaultComboBoxModel<>(booleans))),
+				WRAP);
+		//
+		// screen reader
+		//
+		add(dialog, new JLabel("Screen Readers"));
+		add(dialog, new JComboBox<>(allowScreenReaders = testAndGet(notNull, allowScreenReaders,
+				() -> new DefaultComboBoxModel<>(booleans))), WRAP);
+		//
+		return dialog;
+		//
+	}
+
+	private static <T> T testAndGet(final Predicate<Object> predicate, final T value, final Supplier<T> supplier) {
+		//
+		if (predicate == null || predicate.test(value)) {
+			return value;
+		}
+		//
+		return supplier != null ? supplier.get() : value;
 		//
 	}
 

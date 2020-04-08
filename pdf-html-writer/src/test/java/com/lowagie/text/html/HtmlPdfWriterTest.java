@@ -21,6 +21,8 @@ import java.util.EventObject;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import javax.swing.AbstractButton;
 import javax.swing.JComboBox;
@@ -28,6 +30,7 @@ import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JTextField;
 
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,8 +46,9 @@ class HtmlPdfWriterTest {
 	private static Method METHOD_WRITE_HTML_FILE_TO_PDF_FILE, METHOD_ADD_ACTION_LISTENER, METHOD_ADD2, METHOD_ADD3,
 			METHOD_GET_SYSTEM_CLIP_BOARD, METHOD_SET_CONTENTS, METHOD_GET_PERMISSIONS, METHOD_KEY_SET, METHOD_TO_ARRAY,
 			METHOD_SET_WIDTH, METHOD_GET, METHOD_GET_SELECTED_ITEM, METHOD_OR, METHOD_GET_BYTES, METHOD_LENGTH,
-			METHOD_SET_ENCRYPTION, METHOD_SET_META_DATA, METHOD_CREATE_PROPERTIES_DIALOG, METHOD_GET_SOURCE,
-			METHOD_PACK, METHOD_SET_VISIBLE, METHOD_GET_WIDTH = null;
+			METHOD_SET_ENCRYPTION, METHOD_SET_META_DATA, METHOD_CREATE_PROPERTIES_DIALOG,
+			METHOD_CREATE_PERMISSION_DIALOG, METHOD_GET_SOURCE, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_GET_WIDTH,
+			METHOD_TEST_AND_GET, METHOD_CAST = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -92,6 +96,8 @@ class HtmlPdfWriterTest {
 		//
 		(METHOD_CREATE_PROPERTIES_DIALOG = clz.getDeclaredMethod("createPropertiesDialog")).setAccessible(true);
 		//
+		(METHOD_CREATE_PERMISSION_DIALOG = clz.getDeclaredMethod("createPermissionDialog")).setAccessible(true);
+		//
 		(METHOD_GET_SOURCE = clz.getDeclaredMethod("getSource", EventObject.class)).setAccessible(true);
 		//
 		(METHOD_PACK = clz.getDeclaredMethod("pack", Window.class)).setAccessible(true);
@@ -99,6 +105,11 @@ class HtmlPdfWriterTest {
 		(METHOD_SET_VISIBLE = clz.getDeclaredMethod("setVisible", Component.class, Boolean.TYPE)).setAccessible(true);
 		//
 		(METHOD_GET_WIDTH = clz.getDeclaredMethod("getWidth", Dimension2D.class, Double.TYPE)).setAccessible(true);
+		//
+		(METHOD_TEST_AND_GET = clz.getDeclaredMethod("testAndGet", Predicate.class, Object.class, Supplier.class))
+				.setAccessible(true);
+		//
+		(METHOD_CAST = clz.getDeclaredMethod("cast", Class.class, Object.class)).setAccessible(true);
 		//
 	}
 
@@ -116,8 +127,14 @@ class HtmlPdfWriterTest {
 	}
 
 	@Test
-	void testActionPerformed() {
+	void testActionPerformed() throws IllegalAccessException {
+		//
 		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(new ActionEvent("", 0, null)));
+		//
+		final JComboBox<?> cbAllowAll = new JComboBox<>();
+		FieldUtils.writeDeclaredField(instance, "cbAllowAll", cbAllowAll, true);
+		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(new ActionEvent(cbAllowAll, 0, null)));
+		//
 	}
 
 	@Test
@@ -473,6 +490,25 @@ class HtmlPdfWriterTest {
 	}
 
 	@Test
+	void testCreatePermissionDialog() throws Throwable {
+		Assertions.assertNotNull(createPermissionDialog());
+	}
+
+	private JDialog createPermissionDialog() throws Throwable {
+		try {
+			final Object obj = METHOD_CREATE_PERMISSION_DIALOG.invoke(instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof JDialog) {
+				return (JDialog) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
 	void testGetSource() throws Throwable {
 		Assertions.assertNull(getSource(null));
 	}
@@ -532,6 +568,42 @@ class HtmlPdfWriterTest {
 				return ((Double) obj).doubleValue();
 			}
 			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testTestAndGet() throws Throwable {
+		//
+		Assertions.assertNull(testAndGet(null, null, null));
+		Assertions.assertNull(testAndGet(x -> true, null, null));
+		Assertions.assertNull(testAndGet(x -> false, null, null));
+		//
+	}
+
+	private static <T> T testAndGet(final Predicate<Object> predicate, final T value, final Supplier<T> supplier)
+			throws Throwable {
+		try {
+			return (T) METHOD_TEST_AND_GET.invoke(null, predicate, value, supplier);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testCast() throws Throwable {
+		//
+		Assertions.assertNull(cast(null, null));
+		//
+		final String string = "string";
+		Assertions.assertSame(string, cast(String.class, string));
+		//
+	}
+
+	private static <T> T cast(final Class<T> clz, final Object instance) throws Throwable {
+		try {
+			return (T) METHOD_CAST.invoke(null, clz, instance);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
