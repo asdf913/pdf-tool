@@ -10,9 +10,11 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.geom.Dimension2D;
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -20,6 +22,7 @@ import java.util.Collections;
 import java.util.EventObject;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -30,6 +33,9 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JTextField;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.text.JTextComponent;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.jupiter.api.Assertions;
@@ -37,6 +43,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.google.common.reflect.Reflection;
 import com.lowagie.text.Document;
 import com.lowagie.text.ExceptionConverter;
 
@@ -44,12 +52,15 @@ class HtmlPdfWriterTest {
 
 	private static final int ONE = 1;
 
-	private static Method METHOD_WRITE_HTML_FILE_TO_PDF_FILE, METHOD_ADD_ACTION_LISTENER, METHOD_ADD2, METHOD_ADD3,
-			METHOD_GET_SYSTEM_CLIP_BOARD, METHOD_SET_CONTENTS, METHOD_GET_PERMISSIONS, METHOD_KEY_SET, METHOD_TO_ARRAY,
-			METHOD_SET_WIDTH, METHOD_GET, METHOD_GET_SELECTED_ITEM, METHOD_OR, METHOD_GET_BYTES, METHOD_LENGTH,
-			METHOD_SET_ENCRYPTION, METHOD_SET_META_DATA, METHOD_CREATE_PROPERTIES_DIALOG,
+	private static final String STRING = "STRING";
+
+	private static Method METHOD_WRITE_HTML_FILE_TO_PDF_FILE, METHOD_TO_STRING, METHOD_ADD_ACTION_LISTENER, METHOD_ADD2,
+			METHOD_ADD3, METHOD_GET_SYSTEM_CLIP_BOARD, METHOD_SET_CONTENTS, METHOD_GET_PERMISSIONS, METHOD_KEY_SET,
+			METHOD_TO_ARRAY, METHOD_SET_WIDTH, METHOD_GET, METHOD_GET_SELECTED_ITEM, METHOD_OR, METHOD_GET_BYTES,
+			METHOD_LENGTH, METHOD_SET_ENCRYPTION, METHOD_SET_META_DATA, METHOD_CREATE_PROPERTIES_DIALOG,
 			METHOD_CREATE_PERMISSION_DIALOG, METHOD_GET_SOURCE, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_GET_WIDTH,
-			METHOD_TEST_AND_GET, METHOD_CAST, METHOD_IS_SELECTED = null;
+			METHOD_TEST_AND_GET, METHOD_CAST, METHOD_IS_SELECTED, METHOD_GET_ROW_COUNT, METHOD_ADD_ROW,
+			METHOD_GET_DATA_VECTOR, METHOD_READ_VALUE = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -58,6 +69,8 @@ class HtmlPdfWriterTest {
 		//
 		(METHOD_WRITE_HTML_FILE_TO_PDF_FILE = clz.getDeclaredMethod("writeHtmlFileToPdfFile", File.class,
 				Consumer.class, File.class)).setAccessible(true);
+		//
+		(METHOD_TO_STRING = clz.getDeclaredMethod("toString", Object.class)).setAccessible(true);
 		//
 		(METHOD_ADD_ACTION_LISTENER = clz.getDeclaredMethod("addActionListener", ActionListener.class,
 				AbstractButton[].class)).setAccessible(true);
@@ -114,18 +127,49 @@ class HtmlPdfWriterTest {
 		//
 		(METHOD_IS_SELECTED = clz.getDeclaredMethod("isSelected", AbstractButton.class)).setAccessible(true);
 		//
+		(METHOD_GET_ROW_COUNT = clz.getDeclaredMethod("getRowCount", TableModel.class)).setAccessible(true);
+		//
+		(METHOD_ADD_ROW = clz.getDeclaredMethod("addRow", DefaultTableModel.class, Object[].class)).setAccessible(true);
+		//
+		(METHOD_GET_DATA_VECTOR = clz.getDeclaredMethod("getDataVector", DefaultTableModel.class)).setAccessible(true);
+		//
+		(METHOD_READ_VALUE = clz.getDeclaredMethod("readValue", ObjectReader.class, String.class)).setAccessible(true);
+		//
+	}
+
+	private class IH implements InvocationHandler {
+
+		private Integer rowCount = null;
+
+		@Override
+		public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
+			//
+			final String methodName = method != null ? method.getName() : null;
+			//
+			if (proxy instanceof TableModel) {
+				if ("getRowCount".equals(methodName)) {
+					return rowCount;
+				}
+			}
+			//
+			throw new Throwable(methodName);
+			//
+		}
+
 	}
 
 	private HtmlPdfWriter instance = null;
 
 	private Clipboard systemClipboard = null;
 
+	private DefaultTableModel defaultTableModel = null;
+
 	@BeforeEach
 	void beforeEach() throws Throwable {
 		//
 		instance = new HtmlPdfWriter();
-		//
 		systemClipboard = getSystemClipboard(Toolkit.getDefaultToolkit());
+		defaultTableModel = new DefaultTableModel();
 		//
 	}
 
@@ -137,6 +181,30 @@ class HtmlPdfWriterTest {
 		final JComboBox<?> cbAllowAll = new JComboBox<>();
 		FieldUtils.writeDeclaredField(instance, "cbAllowAll", cbAllowAll, true);
 		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(new ActionEvent(cbAllowAll, 0, null)));
+		//
+	}
+
+	@Test
+	void testKeyReleased() throws IllegalAccessException {
+		//
+		Assertions.assertDoesNotThrow(() -> instance.keyReleased(null));
+		//
+		final JTextComponent tfHeaders = new JTextField();
+		final KeyEvent keyEvent = new KeyEvent(tfHeaders, 0, 0, 0, 0, ' ');
+		//
+		Assertions.assertDoesNotThrow(() -> instance.keyReleased(keyEvent));
+		//
+		FieldUtils.writeDeclaredField(instance, "tfHeaders", tfHeaders, true);
+		Assertions.assertDoesNotThrow(() -> instance.keyReleased(keyEvent));
+		//
+		tfHeaders.setText(" ");
+		Assertions.assertDoesNotThrow(() -> instance.keyReleased(keyEvent));
+		//
+		tfHeaders.setText("{\"k1\":\"v1\"}");
+		Assertions.assertDoesNotThrow(() -> instance.keyReleased(keyEvent));
+		//
+		tfHeaders.setText("A");
+		Assertions.assertDoesNotThrow(() -> instance.keyReleased(keyEvent));
 		//
 	}
 
@@ -239,8 +307,27 @@ class HtmlPdfWriterTest {
 		}
 	}
 
-	private static String toString(final Object instance) {
-		return instance != null ? instance.toString() : null;
+	@Test
+	void testToString() throws Throwable {
+		//
+		Assertions.assertNull(toString(null));
+		Assertions.assertSame(STRING, toString(STRING));
+		Assertions.assertEquals(Integer.toString(ONE), toString(Integer.valueOf(ONE)));
+		//
+	}
+
+	private static String toString(final Object instance) throws Throwable {
+		try {
+			final Object obj = METHOD_TO_STRING.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof String) {
+				return (String) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
 	}
 
 	@Test
@@ -598,9 +685,7 @@ class HtmlPdfWriterTest {
 	void testCast() throws Throwable {
 		//
 		Assertions.assertNull(cast(null, null));
-		//
-		final String string = "string";
-		Assertions.assertSame(string, cast(String.class, string));
+		Assertions.assertSame(STRING, cast(String.class, STRING));
 		//
 	}
 
@@ -630,6 +715,73 @@ class HtmlPdfWriterTest {
 				return ((Boolean) obj).booleanValue();
 			}
 			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetRowCount() throws Throwable {
+		//
+		final IH ih = new IH();
+		final Integer rowCount = Integer.valueOf(0);
+		ih.rowCount = rowCount;
+		Assertions.assertEquals(rowCount, getRowCount(Reflection.newProxy(TableModel.class, ih)));
+		//
+	}
+
+	private static int getRowCount(final TableModel instance) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_ROW_COUNT.invoke(null, instance);
+			if (obj instanceof Integer) {
+				return ((Integer) obj).intValue();
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testAddRow() {
+		Assertions.assertDoesNotThrow(() -> addRow(defaultTableModel));
+	}
+
+	private static void addRow(final DefaultTableModel instance, final Object... row) throws Throwable {
+		try {
+			METHOD_ADD_ROW.invoke(null, instance, row);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetDataVector() throws Throwable {
+		Assertions.assertEquals(Collections.emptyList(), getDataVector(defaultTableModel));
+	}
+
+	private static Vector<?> getDataVector(final DefaultTableModel instance) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_DATA_VECTOR.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof Vector) {
+				return (Vector) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testReadValue() throws Throwable {
+		Assertions.assertNull(readValue(null, null));
+	}
+
+	private static <T> T readValue(final ObjectReader instance, final String input) throws Throwable {
+		try {
+			return (T) METHOD_READ_VALUE.invoke(null, instance, input);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

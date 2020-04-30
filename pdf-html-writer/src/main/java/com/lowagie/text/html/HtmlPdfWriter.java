@@ -11,6 +11,8 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.geom.Dimension2D;
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,6 +40,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Vector;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -59,8 +62,12 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextComponentUtil;
 import javax.swing.JTextField;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
 import javax.swing.text.JTextComponent;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -70,6 +77,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.pdf.PdfReader;
@@ -78,7 +88,7 @@ import com.lowagie.text.pdf.PdfWriter;
 
 import net.miginfocom.swing.MigLayout;
 
-public class HtmlPdfWriter implements ActionListener, InitializingBean {
+public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListener {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HtmlPdfWriter.class);
 
@@ -111,7 +121,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		//
 		int[] result = null;
 		//
-		for (int i = 0; temp != null && i < temp.size(); i++) {
+		for (int i = 0; i < size(temp); i++) {
 			//
 			if ((f = temp.get(i)) == null || !Objects.equals(f.getType(), Integer.TYPE)
 					|| !Modifier.isStatic(f.getModifiers())) {
@@ -160,29 +170,25 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		//
 		Map<String, Integer> result = null;
 		//
-		if (fs != null) {
+		Field f = null;
+		//
+		for (int i = 0; i < size(fs); i++) {
 			//
-			Field f = null;
+			if ((f = fs.get(i)) == null) {
+				continue;
+			}
 			//
-			for (int i = 0; i < fs.size(); i++) {
-				//
-				if ((f = fs.get(i)) == null) {
-					continue;
-				}
-				//
-				if (result == null) {
-					result = new LinkedHashMap<>();
-				}
-				//
-				try {
-					result.put(getName(f), f.getInt(null));
-				} catch (final IllegalAccessException e) {
-					LOG.error(e.getMessage(), e);
-				}
-				//
-			} // for
-				//
-		} // if
+			if (result == null) {
+				result = new LinkedHashMap<>();
+			}
+			//
+			try {
+				result.put(getName(f), f.getInt(null));
+			} catch (final IllegalAccessException e) {
+				LOG.error(e.getMessage(), e);
+			}
+			//
+		} // for
 			//
 		return result;
 		//
@@ -190,8 +196,8 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 
 	private JFrame jFrame = null;
 
-	private JTextComponent pfUser, pfOwner, tfOutput, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator,
-			tfProducer = null;
+	private JTextComponent pfUser, pfOwner, tfOutput, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator, tfProducer,
+			tfHeaders = null;
 
 	private JComboBox<String> encryptionTypes = null;
 
@@ -216,6 +222,8 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 	private String producer = null;
 
 	private AbstractButton btnCreationDate = null;
+
+	private DefaultTableModel headers = null;
 
 	private JComboBox<Boolean> cbAllowAll = null;
 
@@ -447,7 +455,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 						int[] permission = null;
 						Object selectedItem = null;
 						//
-						for (int i = 0; fs != null && i < fs.size(); i++) {
+						for (int i = 0; i < size(fs); i++) {
 							//
 							if ((f = fs.get(i)) == null || !f.isAnnotationPresent(AllowPermissionField.class)
 									|| (allowPermissionField = f.getAnnotation(AllowPermissionField.class)) == null) {
@@ -515,7 +523,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 			Field f = null;
 			ComboBoxModel<?> cb = null;
 			//
-			for (int i = 0; fs != null && i < fs.size(); i++) {
+			for (int i = 0; i < size(fs); i++) {
 				//
 				if ((f = fs.get(i)) == null) {
 					continue;
@@ -535,6 +543,72 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 				//
 		}
 		//
+	}
+
+	@Override
+	public void keyPressed(final KeyEvent e) {
+	}
+
+	@Override
+	public void keyReleased(final KeyEvent evt) {
+		//
+		if (Objects.equals(getSource(evt), tfHeaders)) {
+			//
+			for (int i = getRowCount(headers) - 1; i >= 0; i--) {
+				headers.removeRow(i);
+			}
+			//
+			try {
+				//
+				final String string = JTextComponentUtil.getText(tfHeaders);
+				//
+				forEach(entrySet(
+						StringUtils.isNotBlank(string) ? readValue(new ObjectMapper().readerFor(Map.class), string)
+								: null),
+						entry -> {
+							if (entry != null) {
+								addRow(headers, new Object[] { entry.getKey(), entry.getValue() });
+							}
+						});
+				//
+			} catch (final JsonProcessingException e) {
+				LOG.error(e.getMessage(), e);
+			}
+			//
+		}
+		//
+	}
+
+	private static <T> T readValue(final ObjectReader instance, final String input) throws JsonProcessingException {
+		return instance != null ? instance.readValue(input) : null;
+	}
+
+	private static <K, V> Set<Entry<K, V>> entrySet(final Map<K, V> instance) {
+		return instance != null ? instance.entrySet() : null;
+	}
+
+	private static <T> void forEach(final Iterable<T> instance, final Consumer<T> action) {
+		if (instance != null) {
+			instance.forEach(action);
+		}
+	}
+
+	private static int getRowCount(final TableModel instance) {
+		return instance != null ? instance.getRowCount() : 0;
+	}
+
+	private static void addRow(final DefaultTableModel instance, final Object... row) {
+		if (instance != null) {
+			instance.addRow(row);
+		}
+	}
+
+	private static Vector<?> getDataVector(final DefaultTableModel instance) {
+		return instance != null ? instance.getDataVector() : null;
+	}
+
+	@Override
+	public void keyTyped(final KeyEvent evt) {
 	}
 
 	private static List<Field> getAllowPermissionFields(final Field[] fs) {
@@ -638,6 +712,24 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 			document.addCreationDate();
 		}
 		//
+		forEach(getDataVector(headers), row -> {
+			final List<?> list = cast(List.class, row);
+			if (size(list) > 1) {
+				document.addHeader(toString(list.get(0)), toString(list.get(1)));
+			}
+		});
+		//
+	}
+
+	private static String toString(final Object instance) {
+		if (instance instanceof String) {
+			return (String) instance;
+		}
+		return instance != null ? instance.toString() : null;
+	}
+
+	private static int size(final Collection<?> instance) {
+		return instance != null ? instance.size() : 0;
 	}
 
 	private static boolean isSelected(final AbstractButton instance) {
@@ -780,7 +872,21 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		add(dialog, new JLabel("Create Date"));
 		add(dialog, btnCreationDate = new JCheckBox(), WRAP);
 		//
-		setWidth(200, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator, tfProducer);
+		// header(s)
+		//
+		add(dialog, new JLabel("Header(s)"));
+		if (tfHeaders == null) {
+			(tfHeaders = new JTextField()).addKeyListener(this);
+		}
+		add(dialog, tfHeaders, WRAP);
+		//
+		add(dialog, new JLabel());
+		final Component component = new JScrollPane(new JTable(headers = ObjectUtils.defaultIfNull(headers,
+				new DefaultTableModel(new Object[] { "Name", "Value" }, 0))));
+		add(dialog, component, WRAP);
+		//
+		setWidth(Math.max((int) getWidth(getPreferredSize(component), 0), 200), tfTitle, tfAuthor, tfSubject,
+				tfKeywords, tfCreator, tfProducer, tfHeaders);
 		//
 		return dialog;
 		//
