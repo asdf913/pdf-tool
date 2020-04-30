@@ -49,6 +49,7 @@ import javax.swing.AbstractButton;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComboBoxUtil;
 import javax.swing.JDialog;
@@ -213,6 +214,8 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 	private String creator = null;
 
 	private String producer = null;
+
+	private AbstractButton btnCreationDate = null;
 
 	private JComboBox<Boolean> cbAllowAll = null;
 
@@ -631,6 +634,14 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 				//
 		} // if
 			//
+		if (isSelected(btnCreationDate)) {
+			document.addCreationDate();
+		}
+		//
+	}
+
+	private static boolean isSelected(final AbstractButton instance) {
+		return instance != null && instance.isSelected();
 	}
 
 	private static <V> V get(final Map<?, V> instance, final Object key) {
@@ -765,6 +776,9 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean {
 		//
 		add(dialog, new JLabel("Producer"));
 		add(dialog, tfProducer = ObjectUtils.defaultIfNull(tfProducer, new JTextField(producer)), WRAP);
+		//
+		add(dialog, new JLabel("Create Date"));
+		add(dialog, btnCreationDate = new JCheckBox(), WRAP);
 		//
 		setWidth(200, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator, tfProducer);
 		//

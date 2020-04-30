@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import javax.swing.AbstractButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -48,7 +49,7 @@ class HtmlPdfWriterTest {
 			METHOD_SET_WIDTH, METHOD_GET, METHOD_GET_SELECTED_ITEM, METHOD_OR, METHOD_GET_BYTES, METHOD_LENGTH,
 			METHOD_SET_ENCRYPTION, METHOD_SET_META_DATA, METHOD_CREATE_PROPERTIES_DIALOG,
 			METHOD_CREATE_PERMISSION_DIALOG, METHOD_GET_SOURCE, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_GET_WIDTH,
-			METHOD_TEST_AND_GET, METHOD_CAST = null;
+			METHOD_TEST_AND_GET, METHOD_CAST, METHOD_IS_SELECTED = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -110,6 +111,8 @@ class HtmlPdfWriterTest {
 				.setAccessible(true);
 		//
 		(METHOD_CAST = clz.getDeclaredMethod("cast", Class.class, Object.class)).setAccessible(true);
+		//
+		(METHOD_IS_SELECTED = clz.getDeclaredMethod("isSelected", AbstractButton.class)).setAccessible(true);
 		//
 	}
 
@@ -604,6 +607,29 @@ class HtmlPdfWriterTest {
 	private static <T> T cast(final Class<T> clz, final Object instance) throws Throwable {
 		try {
 			return (T) METHOD_CAST.invoke(null, clz, instance);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testIsSelected() throws Throwable {
+		//
+		final AbstractButton instance = new JCheckBox();
+		Assertions.assertFalse(isSelected(instance));
+		//
+		instance.setSelected(true);
+		Assertions.assertTrue(isSelected(instance));
+		//
+	}
+
+	private static boolean isSelected(final AbstractButton instance) throws Throwable {
+		try {
+			final Object obj = METHOD_IS_SELECTED.invoke(null, instance);
+			if (obj instanceof Boolean) {
+				return ((Boolean) obj).booleanValue();
+			}
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
