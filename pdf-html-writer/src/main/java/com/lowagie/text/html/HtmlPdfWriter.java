@@ -203,7 +203,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 
 	private JComboBox<String> encryptionTypes = null;
 
-	private AbstractButton btnProperties, btnPermission, btnExecute, btnCopy = null;
+	private AbstractButton btnProperties, btnPermission, btnExecute, btnCopy, cbFullCompression = null;
 
 	private String encryptionType = null;
 
@@ -319,6 +319,9 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 	private void init(final Container container) {
 		//
 		final String wrap = String.format("span %1$s,%2$s", 2, WRAP);
+		//
+		add(container, new JLabel("Full Compression"));
+		add(container, cbFullCompression = new JCheckBox(), wrap);
 		//
 		add(container, new JLabel("Encryption"));
 		add(container, encryptionTypes = new JComboBox<>(
@@ -441,7 +444,12 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 				try {
 					//
 					JTextComponentUtil.setText(tfOutput, null);
+					//
 					writeHtmlFileToPdfFile(jfc.getSelectedFile(), this::setMetaData, fileOutput);
+					//
+					if (isSelected(cbFullCompression)) {
+						setFullCompression(fileOutput);
+					}
 					//
 					final byte[] userPassword = getBytes(JTextComponentUtil.getText(pfUser));
 					final byte[] ownerPassword = getBytes(JTextComponentUtil.getText(pfOwner));
@@ -846,6 +854,22 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 			final PdfStamper stamper = pdfReader != null ? new PdfStamper(pdfReader, os) : null;
 			if (stamper != null) {
 				stamper.setEncryption(userPassword, ownerPassword, permission, encryptionType);
+				stamper.close();
+			}
+			//
+		} // try
+			//
+	}
+
+	private static void setFullCompression(final File file) throws IOException {
+		//
+		try (final InputStream is = file != null ? new FileInputStream(file) : null;
+				final PdfReader pdfReader = is != null ? new PdfReader(is) : null;
+				final OutputStream os = file != null ? new FileOutputStream(file) : null) {
+			//
+			final PdfStamper stamper = pdfReader != null ? new PdfStamper(pdfReader, os) : null;
+			if (stamper != null) {
+				stamper.setFullCompression();
 				stamper.close();
 			}
 			//

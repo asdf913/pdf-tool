@@ -14,6 +14,11 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Dimension2D;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -48,6 +53,8 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.reflect.Reflection;
 import com.lowagie.text.Document;
 import com.lowagie.text.ExceptionConverter;
+import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.PdfStamper;
 
 class HtmlPdfWriterTest {
 
@@ -61,7 +68,7 @@ class HtmlPdfWriterTest {
 			METHOD_LENGTH, METHOD_SET_ENCRYPTION, METHOD_SET_META_DATA, METHOD_CREATE_PROPERTIES_DIALOG,
 			METHOD_CREATE_PERMISSION_DIALOG, METHOD_GET_SOURCE, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_GET_WIDTH,
 			METHOD_TEST_AND_GET, METHOD_CAST, METHOD_IS_SELECTED, METHOD_GET_ROW_COUNT, METHOD_ADD_ROW,
-			METHOD_GET_DATA_VECTOR, METHOD_READ_VALUE = null;
+			METHOD_GET_DATA_VECTOR, METHOD_READ_VALUE, METHOD_SET_FULL_COMPRESSION = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -135,6 +142,8 @@ class HtmlPdfWriterTest {
 		(METHOD_GET_DATA_VECTOR = clz.getDeclaredMethod("getDataVector", DefaultTableModel.class)).setAccessible(true);
 		//
 		(METHOD_READ_VALUE = clz.getDeclaredMethod("readValue", ObjectReader.class, String.class)).setAccessible(true);
+		//
+		(METHOD_SET_FULL_COMPRESSION = clz.getDeclaredMethod("setFullCompression", File.class)).setAccessible(true);
 		//
 	}
 
@@ -786,6 +795,19 @@ class HtmlPdfWriterTest {
 	private static <T> T readValue(final ObjectReader instance, final String input) throws Throwable {
 		try {
 			return (T) METHOD_READ_VALUE.invoke(null, instance, input);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetFullCompression() {
+		Assertions.assertDoesNotThrow(() -> setFullCompression(null));
+	}
+
+	private static void setFullCompression(final File file) throws Throwable {
+		try {
+			METHOD_SET_FULL_COMPRESSION.invoke(null, file);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
