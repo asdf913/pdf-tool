@@ -223,6 +223,8 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 
 	private String producer = null;
 
+	private Boolean addCreationDate = null;
+
 	private AbstractButton btnCreationDate = null;
 
 	private DefaultTableModel headers = null;
@@ -303,6 +305,10 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 
 	public void setProducer(final String producer) {
 		this.producer = producer;
+	}
+
+	public void setAddCreationDate(final Boolean addCreationDate) {
+		this.addCreationDate = addCreationDate;
 	}
 
 	@Override
@@ -873,6 +879,9 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 		//
 		add(dialog, new JLabel("Create Date"));
 		add(dialog, btnCreationDate = new JCheckBox(), WRAP);
+		if (addCreationDate != null) {
+			btnCreationDate.setSelected(addCreationDate.booleanValue());
+		}
 		//
 		// header(s)
 		//
