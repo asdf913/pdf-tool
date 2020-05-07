@@ -1,6 +1,7 @@
 package org.springframework.context.support;
 
 import java.awt.Component;
+import java.awt.GraphicsEnvironment;
 import java.awt.Window;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -31,7 +32,7 @@ class MainTest {
 
 	@BeforeEach
 	void beforeEach() {
-		window = new JFrame();
+		window = !GraphicsEnvironment.isHeadless() ? new JFrame() : null;
 	}
 
 	@Test

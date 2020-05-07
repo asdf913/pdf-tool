@@ -2,6 +2,7 @@ package com.lowagie.text.html;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
@@ -562,7 +563,7 @@ class HtmlPdfWriterTest {
 
 	@Test
 	void testCreatePropertiesDialog() throws Throwable {
-		Assertions.assertNotNull(createPropertiesDialog());
+		Assertions.assertSame(GraphicsEnvironment.isHeadless(), createPropertiesDialog() == null);
 	}
 
 	private JDialog createPropertiesDialog() throws Throwable {
@@ -581,7 +582,7 @@ class HtmlPdfWriterTest {
 
 	@Test
 	void testCreatePermissionDialog() throws Throwable {
-		Assertions.assertNotNull(createPermissionDialog());
+		Assertions.assertSame(GraphicsEnvironment.isHeadless(), createPermissionDialog() == null);
 	}
 
 	private JDialog createPermissionDialog() throws Throwable {
@@ -615,7 +616,10 @@ class HtmlPdfWriterTest {
 	void testPack() {
 		//
 		Assertions.assertDoesNotThrow(() -> pack(null));
-		Assertions.assertDoesNotThrow(() -> pack(new JFrame()));
+		//
+		if (!GraphicsEnvironment.isHeadless()) {
+			Assertions.assertDoesNotThrow(() -> pack(new JFrame()));
+		}
 		//
 	}
 

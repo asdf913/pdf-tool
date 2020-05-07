@@ -9,8 +9,10 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.awt.Image;
+import java.awt.LayoutManager;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.RenderingHints;
@@ -681,7 +683,9 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			//
 			final PDFont font = cast(PDFont.class, getSelectedItem(this.font));
 			if (font == null) {
-				JOptionPane.showMessageDialog(null, "Please select a font");
+				if (!GraphicsEnvironment.isHeadless()) {
+					JOptionPane.showMessageDialog(null, "Please select a font");
+				}
 				return;
 			}
 			//
@@ -849,9 +853,9 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private JDialog createPropertiesDialog() {
 		//
-		final JDialog dialog = new JDialog();
-		dialog.setTitle("Properties");
-		dialog.setLayout(new MigLayout());
+		final JDialog dialog = createJDialog();
+		setTitle(dialog, "Properties");
+		setLayout(dialog, new MigLayout());
 		//
 		add(dialog, new JLabel("Title"));
 		add(dialog, tfTitle = ObjectUtils.defaultIfNull(tfTitle, new JTextField(title)), WRAP);
@@ -877,9 +881,25 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 	}
 
+	private static JDialog createJDialog() {
+		return !GraphicsEnvironment.isHeadless() ? new JDialog() : null;
+	}
+
+	private static void setTitle(final JDialog instance, final String title) {
+		if (instance != null) {
+			instance.setTitle(title);
+		}
+	}
+
+	private static void setLayout(final Container instance, final LayoutManager layoutManager) {
+		if (instance != null) {
+			instance.setLayout(layoutManager);
+		}
+	}
+
 	private JDialog createPermissionDialog() {
 		//
-		final JDialog dialog = new JDialog();
+		final JDialog dialog = createJDialog();
 		dialog.setTitle("Permission");
 		dialog.setLayout(new MigLayout());
 		//

@@ -188,7 +188,11 @@ class DocumentWriterTest {
 
 	@Test
 	void testAfterPropertiesSet() throws Exception {
-		Assertions.assertDoesNotThrow(() -> instance.afterPropertiesSet());
+		//
+		if (!GraphicsEnvironment.isHeadless()) {
+			Assertions.assertDoesNotThrow(() -> instance.afterPropertiesSet());
+		}
+		//
 	}
 
 	@Test
@@ -196,23 +200,37 @@ class DocumentWriterTest {
 		//
 		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(new ActionEvent("", 1, null)));
 		//
-		final AbstractButton btnCopy = new JButton();
-		FieldUtils.writeDeclaredField(instance, "btnCopy", btnCopy, true);
-		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(new ActionEvent(btnCopy, 1, null)));
+		final MenuItem showMenuItem = createMenuItem();
+		final ActionEvent actionEvent = showMenuItem != null ? new ActionEvent(showMenuItem, 1, null) : null;
 		//
-		final MenuItem showMenuItem = new MenuItem();
-		FieldUtils.writeDeclaredField(instance, "showMenuItem", showMenuItem, true);
-		final ActionEvent actionEvent = new ActionEvent(showMenuItem, 1, null);
-		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(actionEvent));
+		if (!GraphicsEnvironment.isHeadless()) {
+			//
+			final AbstractButton btnCopy = new JButton();
+			FieldUtils.writeDeclaredField(instance, "btnCopy", btnCopy, true);
+			Assertions.assertDoesNotThrow(() -> instance.actionPerformed(new ActionEvent(btnCopy, 1, null)));
+			//
+			FieldUtils.writeDeclaredField(instance, "showMenuItem", showMenuItem, true);
+			Assertions.assertDoesNotThrow(() -> instance.actionPerformed(actionEvent));
+			//
+		}
 		//
-		final MenuItem exitMenuItem = new MenuItem();
+		final MenuItem exitMenuItem = createMenuItem();
 		FieldUtils.writeDeclaredField(instance, "exitMenuItem", exitMenuItem, true);
-		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(new ActionEvent(exitMenuItem, 1, null)));
+		Assertions.assertDoesNotThrow(
+				() -> instance.actionPerformed(exitMenuItem != null ? new ActionEvent(exitMenuItem, 1, null) : null));
 		//
-		final JFrame jFrame = new JFrame();
-		instance.setjFrame(jFrame);
-		Assertions.assertDoesNotThrow(() -> instance.actionPerformed(actionEvent));
+		if (!GraphicsEnvironment.isHeadless()) {
+			//
+			final JFrame jFrame = new JFrame();
+			instance.setjFrame(jFrame);
+			Assertions.assertDoesNotThrow(() -> instance.actionPerformed(actionEvent));
+			//
+		}
 		//
+	}
+
+	private static MenuItem createMenuItem() {
+		return !GraphicsEnvironment.isHeadless() ? new MenuItem() : null;
 	}
 
 	@Test
@@ -622,7 +640,10 @@ class DocumentWriterTest {
 	void testPack() {
 		//
 		Assertions.assertDoesNotThrow(() -> pack(null));
-		Assertions.assertDoesNotThrow(() -> pack(new JFrame()));
+		//
+		if (!GraphicsEnvironment.isHeadless()) {
+			Assertions.assertDoesNotThrow(() -> pack(new JFrame()));
+		}
 		//
 	}
 
@@ -657,8 +678,11 @@ class DocumentWriterTest {
 	void testCreatePropertiesDialog() throws Throwable {
 		//
 		final JDialog instance1 = createPropertiesDialog();
-		Assertions.assertNotNull(instance1);
-		Assertions.assertNotSame(instance1, createPropertiesDialog());
+		//
+		Assertions.assertSame(GraphicsEnvironment.isHeadless(), instance1 == null);
+		if (!GraphicsEnvironment.isHeadless()) {
+			Assertions.assertNotSame(instance1, createPropertiesDialog());
+		}
 		//
 	}
 
@@ -1004,7 +1028,11 @@ class DocumentWriterTest {
 
 	@Test
 	void testAddWindowListener() {
-		Assertions.assertDoesNotThrow(() -> addWindowListener(new Window(null), null));
+		//
+		if (!GraphicsEnvironment.isHeadless()) {
+			Assertions.assertDoesNotThrow(() -> addWindowListener(new Window(null), null));
+		}
+		//
 	}
 
 	private static synchronized void addWindowListener(final Window instance, final WindowListener windowListener)

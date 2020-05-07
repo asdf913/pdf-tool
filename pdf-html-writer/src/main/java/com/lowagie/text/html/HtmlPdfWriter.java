@@ -3,6 +3,8 @@ package com.lowagie.text.html;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
+import java.awt.LayoutManager;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
@@ -769,7 +771,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 	}
 
 	private static Clipboard getSystemClipboard(final Toolkit instance) {
-		return instance != null ? instance.getSystemClipboard() : null;
+		return instance != null && !GraphicsEnvironment.isHeadless() ? instance.getSystemClipboard() : null;
 	}
 
 	private static void setContents(final Clipboard instance, final Transferable contents, final ClipboardOwner owner) {
@@ -847,9 +849,9 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 
 	private JDialog createPropertiesDialog() {
 		//
-		final JDialog dialog = new JDialog();
-		dialog.setTitle("Properties");
-		dialog.setLayout(new MigLayout());
+		final JDialog dialog = createJDialog();
+		setTitle(dialog, "Properties");
+		setLayout(dialog, new MigLayout());
 		//
 		add(dialog, new JLabel("Title"));
 		add(dialog, tfTitle = ObjectUtils.defaultIfNull(tfTitle, new JTextField(title)), WRAP);
@@ -892,11 +894,27 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 		//
 	}
 
+	private static JDialog createJDialog() {
+		return !GraphicsEnvironment.isHeadless() ? new JDialog() : null;
+	}
+
+	private static void setTitle(final JDialog instance, final String title) {
+		if (instance != null) {
+			instance.setTitle(title);
+		}
+	}
+
+	private static void setLayout(final Container instance, final LayoutManager layoutManager) {
+		if (instance != null) {
+			instance.setLayout(layoutManager);
+		}
+	}
+
 	private JDialog createPermissionDialog() {
 		//
-		final JDialog dialog = new JDialog();
-		dialog.setTitle("Permission");
-		dialog.setLayout(new MigLayout());
+		final JDialog dialog = createJDialog();
+		setTitle(dialog, "Permission");
+		setLayout(dialog, new MigLayout());
 		//
 		final Predicate<Object> notNull = x -> x != null;
 		//
