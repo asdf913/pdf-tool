@@ -14,11 +14,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Dimension2D;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -53,8 +48,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.reflect.Reflection;
 import com.lowagie.text.Document;
 import com.lowagie.text.ExceptionConverter;
-import com.lowagie.text.pdf.PdfReader;
-import com.lowagie.text.pdf.PdfStamper;
 
 class HtmlPdfWriterTest {
 
