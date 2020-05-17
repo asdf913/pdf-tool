@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
@@ -43,6 +45,7 @@ import javax.swing.JTextComponentUtil;
 import javax.swing.JTextField;
 import javax.swing.text.JTextComponent;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
@@ -62,6 +65,8 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 	private static final int PREFERRED_WIDTH = 300;
 
 	private static final int PREFERRED_HEIGHT = 300;
+
+	private static final Pattern PATTERN = Pattern.compile("\\.[^.]+$");
 
 	private JFrame jFrame = null;
 
@@ -282,7 +287,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 				//
 				final PDDocument document = toPDDocument(file, owner1, user1);
 				if (document != null) {
-					document.save(new File("output.pdf"));
+					document.save(new File(generateFileName(file, "pdf")));
 				}
 				//
 			} catch (final IOException e) {
@@ -303,6 +308,29 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			jFrame.dispose();
 		}
 		//
+	}
+
+	private static String generateFileName(final File file, final String newFileExtension) {
+		//
+		final String name = getName(file);
+		if (name == null || StringUtils.isBlank(newFileExtension)) {
+			return name;
+		}
+		//
+		return replaceAll(matcher(PATTERN, name), "." + newFileExtension);
+		//
+	}
+
+	private static String getName(final File instance) {
+		return instance != null ? instance.getName() : null;
+	}
+
+	private static Matcher matcher(final Pattern instance, final String input) {
+		return instance != null && input != null ? instance.matcher(input) : null;
+	}
+
+	private static String replaceAll(final Matcher instance, final String replacement) {
+		return instance != null && replacement != null ? instance.replaceAll(replacement) : null;
 	}
 
 	private static Boolean isVisible(final Component instance) {
