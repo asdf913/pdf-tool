@@ -24,17 +24,26 @@ import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -45,6 +54,8 @@ import javax.swing.JTextComponentUtil;
 import javax.swing.JTextField;
 import javax.swing.text.JTextComponent;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
@@ -82,6 +93,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	private String toolTip, ownerPassword, userPassword = null;
 
+	private ComboBoxModel<String> pageSize = null;
+
+	private Map<String, PDRectangle> pageSizeMap = null;
+
 	private ImagePdfWriter() {
 	}
 
@@ -113,6 +128,16 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 	private void init(final Container container) {
 		//
 		final String wrap = String.format("span %1$s,%2$s", 2, WRAP);
+		//
+		add(container, new JLabel("Page Size"));
+		add(container,
+				new JComboBox<>(
+						pageSize = new DefaultComboBoxModel<>(ArrayUtils.insert(0,
+								ObjectUtils.defaultIfNull(toArray(
+										keySet(pageSizeMap = getPageSizeMap(PDRectangle.class.getDeclaredFields())),
+										new String[0]), new String[0]),
+								(String) null))),
+				WRAP);
 		//
 		add(container, new JLabel("Image"));
 		add(container, btnFile = new JButton("Select image file"), wrap);
@@ -153,8 +178,53 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			add(SystemTray.isSupported() ? SystemTray.getSystemTray() : null,
 					createTrayIcon(createImage("PDF", "IMG"), toolTip));
 		} catch (final AWTException e) {
-			e.printStackTrace();
+			LOG.error(e.getMessage(), e);
 		}
+		//
+	}
+
+	private static <K> Set<K> keySet(final Map<K, ?> instance) {
+		return instance != null ? instance.keySet() : null;
+	}
+
+	private static <E> E[] toArray(final Collection<E> instance, final E[] array) {
+		return instance != null && array != null ? instance.toArray(array) : null;
+	}
+
+	private static Map<String, PDRectangle> getPageSizeMap(final Field[] fs) {
+		//
+		Map<String, PDRectangle> result = null;
+		//
+		Field f = null;
+		Object obj = null;
+		//
+		for (int i = 0; fs != null && i < fs.length; i++) {
+			//
+			if ((f = fs[i]) == null || !Objects.equals(f.getType(), PDRectangle.class)
+					|| !Modifier.isStatic(f.getModifiers())) {
+				continue;
+			}
+			//
+			f.setAccessible(true);
+			//
+			try {
+				//
+				if (!((obj = f.get(null)) instanceof PDRectangle)) {
+					continue;
+				} //
+					//
+				if (result == null) {
+					result = new LinkedHashMap<>();
+				}
+				result.put(f.getName(), (PDRectangle) obj);
+				//
+			} catch (final IllegalAccessException e) {
+				LOG.error(e.getMessage(), e);
+			}
+			//
+		} // for
+			//
+		return result;
 		//
 	}
 
@@ -274,24 +344,24 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 				//
 				final String owner1 = JTextComponentUtil.getText(pfOwner1),
 						owner2 = JTextComponentUtil.getText(pfOwner2);
-				if (!Objects.deepEquals(owner1, owner2)) {
+				if (!Objects.equals(owner1, owner2)) {
 					JOptionPane.showMessageDialog(null, "Owner passwords are not matched");
 					return;
 				}
 				//
 				final String user1 = JTextComponentUtil.getText(pfUser1), user2 = JTextComponentUtil.getText(pfUser2);
-				if (!Objects.deepEquals(user1, user2)) {
+				if (!Objects.equals(user1, user2)) {
 					JOptionPane.showMessageDialog(null, "User passwords are not matched");
 					return;
 				}
 				//
-				final PDDocument document = toPDDocument(file, owner1, user1);
+				final PDDocument document = toPDDocument(file,
+						cast(PDRectangle.class, pageSizeMap.get(pageSize.getSelectedItem())), owner1, user1);
 				if (document != null) {
 					document.save(new File(generateFileName(file, "pdf")));
 				}
 				//
 			} catch (final IOException e) {
-				e.printStackTrace();
 				LOG.error(e.getMessage(), e);
 			}
 			//
@@ -308,6 +378,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			jFrame.dispose();
 		}
 		//
+	}
+
+	private static <T> T cast(final Class<T> clz, final Object instance) {
+		return clz != null && clz.isInstance(instance) ? clz.cast(instance) : null;
 	}
 
 	private static String generateFileName(final File file, final String newFileExtension) {
@@ -391,12 +465,12 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		}
 	}
 
-	private static PDDocument toPDDocument(final File file, final String ownerPassword, final String userPassword)
-			throws IOException {
+	private static PDDocument toPDDocument(final File file, final PDRectangle pageSize, final String ownerPassword,
+			final String userPassword) throws IOException {
 		//
 		final PDDocument doc = new PDDocument();
 		//
-		final PDPage page = new PDPage();
+		final PDPage page = new PDPage(pageSize);
 		doc.addPage(page);
 		//
 		final PDImageXObject pdImage = PDImageXObject.createFromFile(file != null ? file.getAbsolutePath() : null, doc);
