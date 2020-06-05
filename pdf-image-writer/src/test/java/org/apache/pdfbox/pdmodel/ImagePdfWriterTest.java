@@ -2,6 +2,7 @@ package org.apache.pdfbox.pdmodel;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -11,12 +12,16 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.ComboBoxModel;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import com.google.common.reflect.Reflection;
 
 class ImagePdfWriterTest {
 
@@ -25,7 +30,7 @@ class ImagePdfWriterTest {
 	private static final String A0 = "A0";
 
 	private static Method METHOD_GENERATE_FILE_NAME, METHOD_MATCHER, METHOD_REPLACE_ALL, METHOD_KEY_SET,
-			METHOD_TO_ARRAY, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST = null;
+			METHOD_TO_ARRAY, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST, METHOD_GET_SELECTED_ITEM = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -47,9 +52,32 @@ class ImagePdfWriterTest {
 		//
 		(METHOD_CAST = clz.getDeclaredMethod("cast", Class.class, Object.class)).setAccessible(true);
 		//
+		(METHOD_GET_SELECTED_ITEM = clz.getDeclaredMethod("getSelectedItem", ComboBoxModel.class)).setAccessible(true);
+		//
 		final Object object = FieldUtils.readDeclaredStaticField(clz, "PATTERN", true);
 		PATTERN = object instanceof Pattern ? (Pattern) object : null;
 		//
+	}
+
+	private class IH implements InvocationHandler {
+
+		private Object selectedItem;
+
+		@Override
+		public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
+			//
+			final String methodName = method != null ? method.getName() : null;
+			//
+			if (proxy instanceof ComboBoxModel) {
+				if ("getSelectedItem".equals(methodName)) {
+					return selectedItem;
+				}
+			}
+			//
+			throw new Throwable(methodName);
+			//
+		}
+
 	}
 
 	@Test
@@ -217,6 +245,22 @@ class ImagePdfWriterTest {
 	private static <T> T cast(final Class<T> clz, final Object instance) throws Throwable {
 		try {
 			return (T) METHOD_CAST.invoke(null, clz, instance);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetSelectedItem() throws Throwable {
+		//
+		Assertions.assertNull(getSelectedItem(null));
+		Assertions.assertNull(getSelectedItem(Reflection.newProxy(ComboBoxModel.class, new IH())));
+		//
+	}
+
+	private static Object getSelectedItem(final ComboBoxModel<?> instance) throws Throwable {
+		try {
+			return METHOD_GET_SELECTED_ITEM.invoke(null, instance);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

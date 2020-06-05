@@ -29,6 +29,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -57,8 +58,10 @@ import javax.swing.text.JTextComponent;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
+import org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.slf4j.Logger;
@@ -97,6 +100,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	private Map<String, PDRectangle> pageSizeMap = null;
 
+	private List<Integer> encryptionKeyLengths = null;
+
+	private ComboBoxModel<Integer> encryptionKeyLength = null;
+
 	private ImagePdfWriter() {
 	}
 
@@ -120,12 +127,16 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		this.userPassword = userPassword;
 	}
 
+	public void setEncryptionKeyLengths(final List<Integer> encryptionKeyLengths) {
+		this.encryptionKeyLengths = encryptionKeyLengths;
+	}
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		init(jFrame);
 	}
 
-	private void init(final Container container) {
+	private void init(final Container container) throws IllegalAccessException {
 		//
 		final String wrap = String.format("span %1$s,%2$s", 2, WRAP);
 		//
@@ -153,6 +164,23 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		panel.setPreferredSize(new Dimension(PREFERRED_WIDTH, PREFERRED_HEIGHT));
 		add(container, panel, wrap);
 		panel.add(labelImage = new JLabel());
+		//
+		add(container, new JLabel("Encryption Key Length"));
+		add(container,
+				new JComboBox<>(
+						encryptionKeyLength = new DefaultComboBoxModel<>(
+								ArrayUtils
+										.insert(0,
+												ObjectUtils.defaultIfNull(
+														encryptionKeyLengths != null
+																? encryptionKeyLengths.toArray(new Integer[0])
+																: new Integer[] { cast(Integer.class,
+																		FieldUtils.readDeclaredStaticField(
+																				ProtectionPolicy.class,
+																				"DEFAULT_KEY_LENGTH", true)) },
+														new Integer[0]),
+												(Integer) null))),
+				WRAP);
 		//
 		add(container, new JLabel("Owner Password"));
 		add(container, pfOwner1 = new JPasswordField());
@@ -356,7 +384,8 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 				}
 				//
 				final PDDocument document = toPDDocument(file,
-						cast(PDRectangle.class, pageSizeMap.get(pageSize.getSelectedItem())), owner1, user1);
+						cast(PDRectangle.class, pageSizeMap.get(getSelectedItem(pageSize))),
+						cast(Integer.class, getSelectedItem(encryptionKeyLength)), owner1, user1);
 				if (document != null) {
 					document.save(new File(generateFileName(file, "pdf")));
 				}
@@ -378,6 +407,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			jFrame.dispose();
 		}
 		//
+	}
+
+	private static Object getSelectedItem(final ComboBoxModel<?> instance) {
+		return instance != null ? instance.getSelectedItem() : null;
 	}
 
 	private static <T> T cast(final Class<T> clz, final Object instance) {
@@ -439,7 +472,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		}
 	}
 
-	public static void main(final String[] args) {
+	public static void main(final String[] args) throws IllegalAccessException {
 		//
 		final JFrame frame = new JFrame();
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -465,8 +498,9 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		}
 	}
 
-	private static PDDocument toPDDocument(final File file, final PDRectangle pageSize, final String ownerPassword,
-			final String userPassword) throws IOException {
+	private static PDDocument toPDDocument(final File file, final PDRectangle pageSize,
+			final Integer encryptionKeyLength, final String ownerPassword, final String userPassword)
+			throws IOException {
 		//
 		final PDDocument doc = new PDDocument();
 		//
@@ -485,7 +519,9 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		final StandardProtectionPolicy policy = new StandardProtectionPolicy(ownerPassword, userPassword,
 				new AccessPermission());
 		policy.setPreferAES(true);
-		policy.setEncryptionKeyLength(128);
+		if (encryptionKeyLength != null) {
+			policy.setEncryptionKeyLength(encryptionKeyLength.intValue());
+		}
 		//
 		doc.protect(policy);
 		//
