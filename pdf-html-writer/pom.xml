@@ -79,6 +79,17 @@
 						</configuration>
 					</execution>
 				</executions>
+				<!-- http://zhentao-li.blogspot.com/2012/06/maven-shade-plugin-invalid-signature.html -->
+				<configuration>
+					<filters>
+						<filter>
+							<artifact>*:*</artifact>
+							<excludes>
+								<exclude>META-INF/*.SF</exclude>
+							</excludes>
+						</filter>
+					</filters>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
