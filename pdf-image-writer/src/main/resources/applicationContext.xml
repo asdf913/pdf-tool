@@ -31,4 +31,7 @@
 		<property name="userPassword" value="${userPassword}" />
 	</bean>
 
+	<bean
+		class="org.springframework.beans.factory.config.CustomBeanPostProcessor" />
+
 </beans>
