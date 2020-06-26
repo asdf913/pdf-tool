@@ -86,7 +86,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	private JLabel labelImage = null;
 
-	private JTextComponent pfOwner1, pfOwner2, pfUser1, pfUser2, tfFile = null;
+	private JTextComponent pfOwner1, pfOwner2, pfUser1, pfUser2, tfFileInput, tfFileOutput = null;
 
 	private AbstractButton btnFile, btnExecute = null;
 
@@ -155,9 +155,9 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		btnFile.addActionListener(this);
 		//
 		add(container, new JLabel());
-		add(container, tfFile = new JTextField(), wrap);
-		tfFile.setEditable(false);
-		tfFile.setPreferredSize(new Dimension(PREFERRED_WIDTH, (int) tfFile.getPreferredSize().getHeight()));
+		add(container, tfFileInput = new JTextField(), wrap);
+		tfFileInput.setEditable(false);
+		tfFileInput.setPreferredSize(new Dimension(PREFERRED_WIDTH, (int) tfFileInput.getPreferredSize().getHeight()));
 		//
 		add(container, new JLabel());
 		final JPanel panel = new JPanel();
@@ -194,7 +194,11 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		add(container, btnExecute = new JButton("Execute"), wrap);
 		btnExecute.addActionListener(this);
 		//
-		setWidth(PREFERRED_WIDTH, tfFile);
+		add(container, new JLabel("Output"));
+		add(container, tfFileOutput = new JTextField(), wrap);
+		tfFileOutput.setEditable(false);
+		//
+		setWidth(PREFERRED_WIDTH, tfFileInput, tfFileOutput);
 		setWidth(PREFERRED_WIDTH / 2, pfOwner1, pfOwner2, pfUser1, pfUser2);
 		//
 		accept(Arrays.asList(pfOwner1::setText, pfOwner2::setText), ownerPassword);
@@ -340,7 +344,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			//
 			setIcon(labelImage, new ImageIcon());
 			//
-			JTextComponentUtil.setText(tfFile, null);
+			JTextComponentUtil.setText(tfFileInput, null);
 			//
 			final JFileChooser jfc = new JFileChooser(".");
 			//
@@ -350,7 +354,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 					setIcon(labelImage, new ImageIcon(getScaledInstance(ImageIO.read(file = jfc.getSelectedFile()),
 							PREFERRED_WIDTH, PREFERRED_HEIGHT, Image.SCALE_DEFAULT)));
 					//
-					JTextComponentUtil.setText(tfFile, file != null ? file.getAbsolutePath() : null);
+					JTextComponentUtil.setText(tfFileInput, getAbsolutePath(file));
 					//
 				} catch (final IOException | NullPointerException e) {
 					LOG.error(e.getMessage(), e);
@@ -387,7 +391,11 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 						cast(PDRectangle.class, pageSizeMap.get(getSelectedItem(pageSize))),
 						cast(Integer.class, getSelectedItem(encryptionKeyLength)), owner1, user1);
 				if (document != null) {
-					document.save(new File(generateFileName(file, "pdf")));
+					//
+					final File fileOutput = new File(generateFileName(file, "pdf"));
+					JTextComponentUtil.setText(tfFileOutput, getAbsolutePath(fileOutput));
+					document.save(new File(generateFileName(fileOutput, "pdf")));
+					//
 				}
 				//
 			} catch (final IOException e) {
@@ -407,6 +415,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			jFrame.dispose();
 		}
 		//
+	}
+
+	private static String getAbsolutePath(final File instance) {
+		return instance != null ? instance.getAbsolutePath() : null;
 	}
 
 	private static Object getSelectedItem(final ComboBoxModel<?> instance) {
@@ -507,7 +519,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		final PDPage page = new PDPage(pageSize);
 		doc.addPage(page);
 		//
-		final PDImageXObject pdImage = PDImageXObject.createFromFile(file != null ? file.getAbsolutePath() : null, doc);
+		final PDImageXObject pdImage = PDImageXObject.createFromFile(getAbsolutePath(file), doc);
 		final PDPageContentStream contents = new PDPageContentStream(doc, page);
 		final PDRectangle mediaBox = page.getMediaBox();
 		//

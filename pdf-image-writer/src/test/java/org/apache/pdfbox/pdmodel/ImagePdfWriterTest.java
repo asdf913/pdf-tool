@@ -30,7 +30,8 @@ class ImagePdfWriterTest {
 	private static final String A0 = "A0";
 
 	private static Method METHOD_GENERATE_FILE_NAME, METHOD_MATCHER, METHOD_REPLACE_ALL, METHOD_KEY_SET,
-			METHOD_TO_ARRAY, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST, METHOD_GET_SELECTED_ITEM = null;
+			METHOD_TO_ARRAY, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST, METHOD_GET_SELECTED_ITEM,
+			METHOD_GET_ABSOLUTE_PATH = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -53,6 +54,8 @@ class ImagePdfWriterTest {
 		(METHOD_CAST = clz.getDeclaredMethod("cast", Class.class, Object.class)).setAccessible(true);
 		//
 		(METHOD_GET_SELECTED_ITEM = clz.getDeclaredMethod("getSelectedItem", ComboBoxModel.class)).setAccessible(true);
+		//
+		(METHOD_GET_ABSOLUTE_PATH = clz.getDeclaredMethod("getAbsolutePath", File.class)).setAccessible(true);
 		//
 		final Object object = FieldUtils.readDeclaredStaticField(clz, "PATTERN", true);
 		PATTERN = object instanceof Pattern ? (Pattern) object : null;
@@ -261,6 +264,28 @@ class ImagePdfWriterTest {
 	private static Object getSelectedItem(final ComboBoxModel<?> instance) throws Throwable {
 		try {
 			return METHOD_GET_SELECTED_ITEM.invoke(null, instance);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetAbsolutePath() throws Throwable {
+		//
+		Assertions.assertNull(getAbsolutePath(null));
+		Assertions.assertNotNull(getAbsolutePath(new File("")));
+		//
+	}
+
+	private static String getAbsolutePath(final File instance) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_ABSOLUTE_PATH.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof String) {
+				return (String) obj;
+			}
+			throw new Throwable(toString(obj.getClass()));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
