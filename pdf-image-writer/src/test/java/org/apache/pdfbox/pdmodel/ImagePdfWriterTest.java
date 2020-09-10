@@ -1,5 +1,9 @@
 package org.apache.pdfbox.pdmodel;
 
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.awt.image.ImageObserver;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -30,11 +34,11 @@ class ImagePdfWriterTest {
 	private static final String A0 = "A0";
 
 	private static Method METHOD_GENERATE_FILE_NAME, METHOD_MATCHER, METHOD_REPLACE_ALL, METHOD_KEY_SET,
-			METHOD_TO_ARRAY, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST, METHOD_GET_SELECTED_ITEM,
-			METHOD_GET_ABSOLUTE_PATH = null;
+			METHOD_TO_ARRAY, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST, METHOD_GET_SELECTED_ITEM, METHOD_GET_ABSOLUTE_PATH,
+			METHOD_RESIZE_IMAGE, METHOD_DRAW_IMAGE = null;
 
 	@BeforeAll
-	static void beforeAll() throws ReflectiveOperationException {
+	private static void beforeAll() throws ReflectiveOperationException {
 		//
 		final Class<?> clz = ImagePdfWriter.class;
 		//
@@ -56,6 +60,12 @@ class ImagePdfWriterTest {
 		(METHOD_GET_SELECTED_ITEM = clz.getDeclaredMethod("getSelectedItem", ComboBoxModel.class)).setAccessible(true);
 		//
 		(METHOD_GET_ABSOLUTE_PATH = clz.getDeclaredMethod("getAbsolutePath", File.class)).setAccessible(true);
+		//
+		(METHOD_RESIZE_IMAGE = clz.getDeclaredMethod("resizeImage", BufferedImage.class, Integer.TYPE, Integer.TYPE))
+				.setAccessible(true);
+		//
+		(METHOD_DRAW_IMAGE = clz.getDeclaredMethod("drawImage", Graphics.class, Image.class, Integer.TYPE, Integer.TYPE,
+				ImageObserver.class)).setAccessible(true);
 		//
 		final Object object = FieldUtils.readDeclaredStaticField(clz, "PATTERN", true);
 		PATTERN = object instanceof Pattern ? (Pattern) object : null;
@@ -286,6 +296,43 @@ class ImagePdfWriterTest {
 				return (String) obj;
 			}
 			throw new Throwable(toString(obj.getClass()));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testResizeImage() throws Throwable {
+		//
+		Assertions.assertNotNull(resizeImage(null, 1, 1));
+		Assertions.assertNotNull(resizeImage(new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), 1, 1));
+		//
+	}
+
+	private static BufferedImage resizeImage(final BufferedImage originalImage, final int targetWidth,
+			final int targetHeight) throws Throwable {
+		try {
+			final Object obj = METHOD_RESIZE_IMAGE.invoke(null, originalImage, targetWidth, targetHeight);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof BufferedImage) {
+				return (BufferedImage) obj;
+			}
+			throw new Throwable(toString(obj.getClass()));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testDrawImage() {
+		Assertions.assertDoesNotThrow(() -> drawImage(null, null, 0, 0, null));
+	}
+
+	private static void drawImage(final Graphics instance, final Image img, final int x, final int y,
+			final ImageObserver observer) throws Throwable {
+		try {
+			METHOD_DRAW_IMAGE.invoke(null, instance, img, x, y, observer);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

@@ -22,6 +22,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
+import java.awt.image.ImageObserver;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -58,6 +60,7 @@ import javax.swing.text.JTextComponent;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
@@ -510,22 +513,46 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		}
 	}
 
-	private static PDDocument toPDDocument(final File file, final PDRectangle pageSize,
+	private static PDDocument toPDDocument(final File file, final PDRectangle _pageSize,
 			final Integer encryptionKeyLength, final String ownerPassword, final String userPassword)
 			throws IOException {
 		//
 		final PDDocument doc = new PDDocument();
 		//
-		final PDPage page = new PDPage(pageSize);
+		final PDPage page = new PDPage(_pageSize);
+		final PDRectangle mediaBox = page.getMediaBox();
 		doc.addPage(page);
 		//
-		final PDImageXObject pdImage = PDImageXObject.createFromFile(getAbsolutePath(file), doc);
-		final PDPageContentStream contents = new PDPageContentStream(doc, page);
-		final PDRectangle mediaBox = page.getMediaBox();
+		BufferedImage bufferedImage = ImageIO.read(file);
+		if (bufferedImage != null) {
+			//
+			final double height = bufferedImage.getHeight();
+			final double width = bufferedImage.getWidth();
+			//
+			final double ratio = NumberUtils.min(1, mediaBox.getHeight() / bufferedImage.getHeight(),
+					mediaBox.getWidth() / width);
+			//
+			bufferedImage = resizeImage(bufferedImage, (int) (width * ratio), (int) (height * ratio));
+			//
+		}
 		//
-		final float startX = (mediaBox.getWidth() - pdImage.getWidth()) / 2;
-		final float startY = (mediaBox.getHeight() - pdImage.getHeight()) / 2;
-		contents.drawImage(pdImage, startX, startY);
+		PDImageXObject pdImage = null;
+		if (bufferedImage != null) {
+			//
+			try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+				ImageIO.write(bufferedImage, "jpg", baos);
+				pdImage = PDImageXObject.createFromByteArray(doc, baos.toByteArray(), "");
+			} // try
+				//
+		}
+		//
+		if (pdImage == null) {
+			pdImage = PDImageXObject.createFromFile(getAbsolutePath(file), doc);
+		}
+		//
+		final PDPageContentStream contents = new PDPageContentStream(doc, page);
+		contents.drawImage(pdImage, (mediaBox.getWidth() - pdImage.getWidth()) / 2,
+				(mediaBox.getHeight() - pdImage.getHeight()) / 2);
 		contents.close();
 		//
 		final StandardProtectionPolicy policy = new StandardProtectionPolicy(ownerPassword, userPassword,
@@ -539,6 +566,30 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		//
 		return doc;
 		//
+	}
+
+	//
+	// https://www.baeldung.com/java-resize-image
+	//
+	private static BufferedImage resizeImage(final BufferedImage originalImage, final int targetWidth,
+			final int targetHeight) throws IOException {
+		//
+		final Image resultingImage = originalImage != null
+				? originalImage.getScaledInstance(targetWidth, targetHeight, Image.SCALE_DEFAULT)
+				: null;
+		//
+		final BufferedImage outputImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
+		drawImage(outputImage.getGraphics(), resultingImage, 0, 0, null);
+		//
+		return outputImage;
+		//
+	}
+
+	private static void drawImage(final Graphics instance, final Image img, final int x, final int y,
+			final ImageObserver observer) {
+		if (instance != null) {
+			instance.drawImage(img, x, y, observer);
+		}
 	}
 
 	private TrayIcon createTrayIcon(final Image image, final String toolTip) {
