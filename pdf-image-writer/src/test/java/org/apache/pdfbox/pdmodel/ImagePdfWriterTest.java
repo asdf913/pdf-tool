@@ -40,7 +40,7 @@ class ImagePdfWriterTest {
 	private static Method METHOD_GENERATE_FILE_NAME, METHOD_MATCHER, METHOD_REPLACE_ALL, METHOD_KEY_SET,
 			METHOD_TO_ARRAY, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST, METHOD_GET_SELECTED_ITEM, METHOD_GET_ABSOLUTE_PATH,
 			METHOD_RESIZE_IMAGE, METHOD_DRAW_IMAGE, METHOD_VALUE_OF, METHOD_INT_VALUE, METHOD_ADD_WATER_MARK_TEXT,
-			METHOD_GET_PD_FONTS = null;
+			METHOD_GET_PD_FONTS0, METHOD_GET_PD_FONTS1 = null;
 
 	@BeforeAll
 	private static void beforeAll() throws ReflectiveOperationException {
@@ -79,7 +79,9 @@ class ImagePdfWriterTest {
 		(METHOD_ADD_WATER_MARK_TEXT = clz.getDeclaredMethod("addWatermarkText", PDDocument.class, PDPage.class,
 				PDFont.class, String.class, Integer.TYPE)).setAccessible(true);
 		//
-		(METHOD_GET_PD_FONTS = clz.getDeclaredMethod("getPDFonts")).setAccessible(true);
+		(METHOD_GET_PD_FONTS0 = clz.getDeclaredMethod("getPDFonts")).setAccessible(true);
+		//
+		(METHOD_GET_PD_FONTS1 = clz.getDeclaredMethod("getPDFonts", Field[].class)).setAccessible(true);
 		//
 		// java.lang.reflect.Field
 		//
@@ -428,12 +430,31 @@ class ImagePdfWriterTest {
 
 	@Test
 	void testGetPDFonts() throws Throwable {
+		//
 		Assertions.assertNotNull(getPDFonts());
+		//
+		Assertions.assertNull(getPDFonts(null));
+		Assertions.assertNull(getPDFonts(new Field[] { null }));
+		//
 	}
 
 	private static PDFont[] getPDFonts() throws Throwable {
 		try {
-			final Object obj = METHOD_GET_PD_FONTS.invoke(null);
+			final Object obj = METHOD_GET_PD_FONTS0.invoke(null);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof PDFont[]) {
+				return (PDFont[]) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	private static PDFont[] getPDFonts(final Field[] fs) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_PD_FONTS1.invoke(null, (Object) fs);
 			if (obj == null) {
 				return null;
 			} else if (obj instanceof PDFont[]) {

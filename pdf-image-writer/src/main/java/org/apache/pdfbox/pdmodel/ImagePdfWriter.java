@@ -240,10 +240,13 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 	}
 
 	private static PDFont[] getPDFonts() {
+		return getPDFonts(PDType1Font.class.getDeclaredFields());
+	}
+
+	private static PDFont[] getPDFonts(final Field[] fs) {
 		//
 		List<PDFont> result = null;
 		//
-		final Field[] fs = PDType1Font.class.getDeclaredFields();
 		Field f = null;
 		//
 		for (int i = 0; fs != null && i < fs.length; i++) {
@@ -689,9 +692,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 	private static BufferedImage resizeImage(final BufferedImage originalImage, final int targetWidth,
 			final int targetHeight) throws IOException {
 		//
-		final Image resultingImage = originalImage != null
-				? originalImage.getScaledInstance(targetWidth, targetHeight, Image.SCALE_DEFAULT)
-				: null;
+		final Image resultingImage = getScaledInstance(originalImage, targetWidth, targetHeight, Image.SCALE_DEFAULT);
 		//
 		final BufferedImage outputImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
 		drawImage(outputImage.getGraphics(), resultingImage, 0, 0, null);
