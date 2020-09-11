@@ -21,6 +21,8 @@ import javax.swing.ComboBoxModel;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -33,9 +35,12 @@ class ImagePdfWriterTest {
 
 	private static final String A0 = "A0";
 
+	private static final int ONE = 1;
+
 	private static Method METHOD_GENERATE_FILE_NAME, METHOD_MATCHER, METHOD_REPLACE_ALL, METHOD_KEY_SET,
 			METHOD_TO_ARRAY, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST, METHOD_GET_SELECTED_ITEM, METHOD_GET_ABSOLUTE_PATH,
-			METHOD_RESIZE_IMAGE, METHOD_DRAW_IMAGE = null;
+			METHOD_RESIZE_IMAGE, METHOD_DRAW_IMAGE, METHOD_VALUE_OF, METHOD_INT_VALUE, METHOD_ADD_WATER_MARK_TEXT,
+			METHOD_GET_PD_FONTS = null;
 
 	@BeforeAll
 	private static void beforeAll() throws ReflectiveOperationException {
@@ -66,6 +71,17 @@ class ImagePdfWriterTest {
 		//
 		(METHOD_DRAW_IMAGE = clz.getDeclaredMethod("drawImage", Graphics.class, Image.class, Integer.TYPE, Integer.TYPE,
 				ImageObserver.class)).setAccessible(true);
+		//
+		(METHOD_VALUE_OF = clz.getDeclaredMethod("valueOf", String.class)).setAccessible(true);
+		//
+		(METHOD_INT_VALUE = clz.getDeclaredMethod("intValue", Number.class, Integer.TYPE)).setAccessible(true);
+		//
+		(METHOD_ADD_WATER_MARK_TEXT = clz.getDeclaredMethod("addWatermarkText", PDDocument.class, PDPage.class,
+				PDFont.class, String.class, Integer.TYPE)).setAccessible(true);
+		//
+		(METHOD_GET_PD_FONTS = clz.getDeclaredMethod("getPDFonts")).setAccessible(true);
+		//
+		// java.lang.reflect.Field
 		//
 		final Object object = FieldUtils.readDeclaredStaticField(clz, "PATTERN", true);
 		PATTERN = object instanceof Pattern ? (Pattern) object : null;
@@ -119,7 +135,7 @@ class ImagePdfWriterTest {
 			} else if (obj instanceof String) {
 				return (String) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -127,6 +143,10 @@ class ImagePdfWriterTest {
 
 	private static String toString(final Object instance) {
 		return instance != null ? instance.toString() : null;
+	}
+
+	private static Class<?> getClass(final Object instance) {
+		return instance != null ? instance.getClass() : null;
 	}
 
 	@Test
@@ -145,7 +165,7 @@ class ImagePdfWriterTest {
 			} else if (obj instanceof Matcher) {
 				return (Matcher) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -170,7 +190,7 @@ class ImagePdfWriterTest {
 			} else if (obj instanceof String) {
 				return (String) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -192,7 +212,7 @@ class ImagePdfWriterTest {
 			} else if (obj instanceof Set) {
 				return (Set) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -240,7 +260,7 @@ class ImagePdfWriterTest {
 			} else if (obj instanceof Map) {
 				return (Map) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -295,7 +315,7 @@ class ImagePdfWriterTest {
 			} else if (obj instanceof String) {
 				return (String) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -318,7 +338,7 @@ class ImagePdfWriterTest {
 			} else if (obj instanceof BufferedImage) {
 				return (BufferedImage) obj;
 			}
-			throw new Throwable(toString(obj.getClass()));
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -333,6 +353,93 @@ class ImagePdfWriterTest {
 			final ImageObserver observer) throws Throwable {
 		try {
 			METHOD_DRAW_IMAGE.invoke(null, instance, img, x, y, observer);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testValueOf() throws Throwable {
+		//
+		Assertions.assertNull(valueOf(null));
+		Assertions.assertNull(valueOf(""));
+		Assertions.assertNull(valueOf(" "));
+		Assertions.assertNull(valueOf("A"));
+		//
+		final Integer one = Integer.valueOf(ONE);
+		Assertions.assertSame(ONE, valueOf(Integer.toString(ONE)));
+		//
+	}
+
+	private static Integer valueOf(final String instance) throws Throwable {
+		try {
+			final Object obj = METHOD_VALUE_OF.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof Integer) {
+				return (Integer) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testIntValue() throws Throwable {
+		//
+		Assertions.assertEquals(0, intValue(null, 0));
+		Assertions.assertEquals(Integer.valueOf(ONE), intValue(ONE, 0));
+		//
+	}
+
+	private static int intValue(final Number instance, final int defaultValue) throws Throwable {
+		try {
+			final Object obj = METHOD_INT_VALUE.invoke(null, instance, defaultValue);
+			if (obj instanceof Integer) {
+				return ((Integer) obj).intValue();
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testAddWatermarkText() {
+		//
+		Assertions.assertDoesNotThrow(() -> addWatermarkText(null, null, null, null, 0));
+		//
+		final PDPage pdPage = new PDPage();
+		Assertions.assertDoesNotThrow(() -> addWatermarkText(null, pdPage, null, "", 0));
+		Assertions.assertDoesNotThrow(() -> addWatermarkText(new PDDocument(), pdPage, null, "", 0));
+		Assertions.assertDoesNotThrow(() -> addWatermarkText(new PDDocument(), pdPage, PDType1Font.COURIER, "", 0));
+		//
+	}
+
+	private static void addWatermarkText(final PDDocument doc, final PDPage page, final PDFont font, final String text,
+			final int fontSize) throws Throwable {
+		try {
+			METHOD_ADD_WATER_MARK_TEXT.invoke(null, doc, page, font, text, fontSize);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetPDFonts() throws Throwable {
+		Assertions.assertNotNull(getPDFonts());
+	}
+
+	private static PDFont[] getPDFonts() throws Throwable {
+		try {
+			final Object obj = METHOD_GET_PD_FONTS.invoke(null);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof PDFont[]) {
+				return (PDFont[]) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

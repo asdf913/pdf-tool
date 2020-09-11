@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -66,6 +67,8 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,6 +109,12 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 	private List<Integer> encryptionKeyLengths = null;
 
 	private ComboBoxModel<Integer> encryptionKeyLength = null;
+
+	private JTextComponent tfWaterMark = null;
+
+	private ComboBoxModel<PDFont> pdFont = null;
+
+	private JTextComponent tfPdFontSize = null;
 
 	private ImagePdfWriter() {
 	}
@@ -168,6 +177,18 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		add(container, panel, wrap);
 		panel.add(labelImage = new JLabel());
 		//
+		add(container, new JLabel("Water Mark Text"));
+		add(container, tfWaterMark = new JTextField(), wrap);
+		//
+		add(container, new JLabel("Water Mark Font"));
+		add(container,
+				new JComboBox<>(pdFont = new DefaultComboBoxModel<>(
+						ObjectUtils.defaultIfNull(ArrayUtils.insert(0, getPDFonts(), (PDFont) null), new PDFont[0]))),
+				wrap);
+		//
+		add(container, new JLabel("Water Mark Font Size"));
+		add(container, tfPdFontSize = new JTextField(), wrap);
+		//
 		add(container, new JLabel("Encryption Key Length"));
 		add(container,
 				new JComboBox<>(
@@ -201,7 +222,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		add(container, tfFileOutput = new JTextField(), wrap);
 		tfFileOutput.setEditable(false);
 		//
-		setWidth(PREFERRED_WIDTH, tfFileInput, tfFileOutput);
+		setWidth(PREFERRED_WIDTH, tfFileInput, tfFileOutput, tfWaterMark, tfPdFontSize);
 		setWidth(PREFERRED_WIDTH / 2, pfOwner1, pfOwner2, pfUser1, pfUser2);
 		//
 		accept(Arrays.asList(pfOwner1::setText, pfOwner2::setText), ownerPassword);
@@ -215,6 +236,39 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		} catch (final AWTException e) {
 			LOG.error(e.getMessage(), e);
 		}
+		//
+	}
+
+	private static PDFont[] getPDFonts() {
+		//
+		List<PDFont> result = null;
+		//
+		final Field[] fs = PDType1Font.class.getDeclaredFields();
+		Field f = null;
+		//
+		for (int i = 0; fs != null && i < fs.length; i++) {
+			//
+			if ((f = fs[i]) == null || !Modifier.isStatic(f.getModifiers())
+					|| !PDFont.class.isAssignableFrom(f.getType())) {
+				continue;
+			}
+			//
+			if (!f.isAccessible()) {
+				f.setAccessible(true);
+			}
+			//
+			if (result == null) {
+				result = new ArrayList<>();
+			}
+			try {
+				result.add(cast(PDFont.class, f.get(null)));
+			} catch (final IllegalAccessException e) {
+				LOG.error(e.getMessage(), e);
+			}
+			//
+		} // for
+			//
+		return result != null ? result.toArray(new PDFont[0]) : null;
 		//
 	}
 
@@ -392,7 +446,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 				//
 				final PDDocument document = toPDDocument(file,
 						cast(PDRectangle.class, pageSizeMap.get(getSelectedItem(pageSize))),
-						cast(Integer.class, getSelectedItem(encryptionKeyLength)), owner1, user1);
+						cast(Integer.class, getSelectedItem(encryptionKeyLength)), owner1, user1,
+						JTextComponentUtil.getText(tfWaterMark), cast(PDFont.class, getSelectedItem(pdFont)),
+						intValue(valueOf(JTextComponentUtil.getText(tfPdFontSize)), 0));
+				//
 				if (document != null) {
 					//
 					final File fileOutput = new File(generateFileName(file, "pdf"));
@@ -418,6 +475,14 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			jFrame.dispose();
 		}
 		//
+	}
+
+	private static Integer valueOf(final String instance) {
+		try {
+			return StringUtils.isNotBlank(instance) ? Integer.valueOf(instance) : null;
+		} catch (final NumberFormatException e) {
+			return null;
+		}
 	}
 
 	private static String getAbsolutePath(final File instance) {
@@ -514,8 +579,8 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 	}
 
 	private static PDDocument toPDDocument(final File file, final PDRectangle _pageSize,
-			final Integer encryptionKeyLength, final String ownerPassword, final String userPassword)
-			throws IOException {
+			final Integer encryptionKeyLength, final String ownerPassword, final String userPassword,
+			final String waterMark, final PDFont pdFont, final Integer fontSize) throws IOException {
 		//
 		final PDDocument doc = new PDDocument();
 		//
@@ -553,6 +618,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		final PDPageContentStream contents = new PDPageContentStream(doc, page);
 		contents.drawImage(pdImage, (mediaBox.getWidth() - pdImage.getWidth()) / 2,
 				(mediaBox.getHeight() - pdImage.getHeight()) / 2);
+		//
+
+		addWatermarkText(doc, page, pdFont, waterMark, fontSize);
+		//
 		contents.close();
 		//
 		final StandardProtectionPolicy policy = new StandardProtectionPolicy(ownerPassword, userPassword,
@@ -566,6 +635,52 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		//
 		return doc;
 		//
+	}
+
+	private static int intValue(final Number instance, final int defaultValue) {
+		return instance != null ? instance.intValue() : defaultValue;
+	}
+
+	//
+	// https://stackoverflow.com/questions/8929954/watermarking-with-pdfbox
+	//
+	private static void addWatermarkText(final PDDocument doc, final PDPage page, final PDFont font, final String text,
+			final int fontSize) throws IOException {
+		//
+		try (final PDPageContentStream cs = page != null && doc != null
+				? new PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND, true, true)
+				: null) {
+			//
+			final PDRectangle mediaBox = page != null ? page.getMediaBox() : null;
+			//
+			final float width = mediaBox != null ? mediaBox.getWidth() : 0;
+			final float height = mediaBox != null ? mediaBox.getHeight() : 0;
+			final float stringWidth = (font != null && text != null ? font.getStringWidth(text) : 0) / 1000 * fontSize;
+			//
+			final float x = (width / 2) - (stringWidth / 2);
+			final float y = height / 2;
+			//
+			if (font != null) {
+				cs.setFont(font, fontSize);
+			}
+			//
+			if (cs != null) {
+				//
+				cs.setNonStrokingColor(Color.GREEN);
+				cs.setStrokingColor(Color.BLUE);
+				//
+				cs.beginText();
+				cs.newLineAtOffset(x, y);
+				//
+				if (text != null && font != null) {
+					cs.showText(text);
+				}
+				cs.endText();
+				//
+			} // if
+				//
+		} // try
+			//
 	}
 
 	//
