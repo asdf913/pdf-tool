@@ -47,7 +47,9 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -94,7 +96,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	private JTextComponent pfOwner1, pfOwner2, pfUser1, pfUser2, tfFileInput, tfFileOutput = null;
 
-	private AbstractButton btnFile, btnExecute = null;
+	private AbstractButton btnFile, btnFontColor, btnExecute = null;
 
 	private File file = null;
 
@@ -115,6 +117,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 	private ComboBoxModel<PDFont> pdFont = null;
 
 	private JTextComponent tfPdFontSize = null;
+
+	private JPanel panelFontColor = null;
+
+	private Color fontColor = null;
 
 	private ImagePdfWriter() {
 	}
@@ -188,6 +194,11 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		//
 		add(container, new JLabel("Water Mark Font Size"));
 		add(container, tfPdFontSize = new JTextField(), wrap);
+		//
+		add(container, new JLabel("Water Mark Font Color"));
+		add(container, btnFontColor = new JButton("Pick"));
+		add(container, panelFontColor = new JPanel(), "span,growx,growy");
+		btnFontColor.addActionListener(this);
 		//
 		add(container, new JLabel("Encryption Key Length"));
 		add(container,
@@ -400,7 +411,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 		//
 		final Object source = evt != null ? evt.getSource() : null;
 		//
-		if (Objects.deepEquals(source, btnFile)) {
+		if (Objects.equals(source, btnFile)) {
 			//
 			setIcon(labelImage, new ImageIcon());
 			//
@@ -409,6 +420,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			final JFileChooser jfc = new JFileChooser(".");
 			//
 			if (jfc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+				//
 				try {
 					//
 					setIcon(labelImage, new ImageIcon(getScaledInstance(ImageIO.read(file = jfc.getSelectedFile()),
@@ -419,9 +431,14 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 				} catch (final IOException | NullPointerException e) {
 					LOG.error(e.getMessage(), e);
 				}
-			}
+				//
+			} // if
+				//
+		} else if (Objects.equals(source, btnFontColor)) {
 			//
-		} else if (Objects.deepEquals(source, btnExecute)) {
+			setBackground(panelFontColor, fontColor = JColorChooser.showDialog(null, "Font Color", null));
+			//
+		} else if (Objects.equals(source, btnExecute)) {
 			//
 			try {
 				//
@@ -451,7 +468,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 						cast(PDRectangle.class, pageSizeMap.get(getSelectedItem(pageSize))),
 						cast(Integer.class, getSelectedItem(encryptionKeyLength)), owner1, user1,
 						JTextComponentUtil.getText(tfWaterMark), cast(PDFont.class, getSelectedItem(pdFont)),
-						intValue(valueOf(JTextComponentUtil.getText(tfPdFontSize)), 0));
+						intValue(valueOf(JTextComponentUtil.getText(tfPdFontSize)), 0), fontColor);
 				//
 				if (document != null) {
 					//
@@ -478,6 +495,12 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			jFrame.dispose();
 		}
 		//
+	}
+
+	private static void setBackground(final JComponent instance, final Color color) {
+		if (instance != null) {
+			instance.setBackground(color);
+		}
 	}
 
 	private static Integer valueOf(final String instance) {
@@ -583,7 +606,8 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	private static PDDocument toPDDocument(final File file, final PDRectangle _pageSize,
 			final Integer encryptionKeyLength, final String ownerPassword, final String userPassword,
-			final String waterMark, final PDFont pdFont, final Integer fontSize) throws IOException {
+			final String waterMark, final PDFont pdFont, final Integer fontSize, final Color fontColor)
+			throws IOException {
 		//
 		final PDDocument doc = new PDDocument();
 		//
@@ -623,7 +647,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 				(mediaBox.getHeight() - pdImage.getHeight()) / 2);
 		//
 
-		addWatermarkText(doc, page, pdFont, waterMark, fontSize);
+		addWatermarkText(doc, page, pdFont, waterMark, fontSize, fontColor);
 		//
 		contents.close();
 		//
@@ -648,7 +672,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 	// https://stackoverflow.com/questions/8929954/watermarking-with-pdfbox
 	//
 	private static void addWatermarkText(final PDDocument doc, final PDPage page, final PDFont font, final String text,
-			final int fontSize) throws IOException {
+			final int fontSize, final Color fontColor) throws IOException {
 		//
 		try (final PDPageContentStream cs = page != null && doc != null
 				? new PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND, true, true)
@@ -669,7 +693,10 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 			//
 			if (cs != null) {
 				//
-				cs.setNonStrokingColor(Color.GREEN);
+				if (fontColor != null) {
+					cs.setNonStrokingColor(fontColor);
+				}
+				//
 				cs.setStrokingColor(Color.BLUE);
 				//
 				cs.beginText();

@@ -1,5 +1,6 @@
 package org.apache.pdfbox.pdmodel;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
@@ -17,6 +18,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.swing.ComboBoxModel;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -40,7 +43,7 @@ class ImagePdfWriterTest {
 	private static Method METHOD_GENERATE_FILE_NAME, METHOD_MATCHER, METHOD_REPLACE_ALL, METHOD_KEY_SET,
 			METHOD_TO_ARRAY, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST, METHOD_GET_SELECTED_ITEM, METHOD_GET_ABSOLUTE_PATH,
 			METHOD_RESIZE_IMAGE, METHOD_DRAW_IMAGE, METHOD_VALUE_OF, METHOD_INT_VALUE, METHOD_ADD_WATER_MARK_TEXT,
-			METHOD_GET_PD_FONTS0, METHOD_GET_PD_FONTS1 = null;
+			METHOD_GET_PD_FONTS0, METHOD_GET_PD_FONTS1, METHOD_SET_BACKGROUND = null;
 
 	@BeforeAll
 	private static void beforeAll() throws ReflectiveOperationException {
@@ -77,11 +80,14 @@ class ImagePdfWriterTest {
 		(METHOD_INT_VALUE = clz.getDeclaredMethod("intValue", Number.class, Integer.TYPE)).setAccessible(true);
 		//
 		(METHOD_ADD_WATER_MARK_TEXT = clz.getDeclaredMethod("addWatermarkText", PDDocument.class, PDPage.class,
-				PDFont.class, String.class, Integer.TYPE)).setAccessible(true);
+				PDFont.class, String.class, Integer.TYPE, Color.class)).setAccessible(true);
 		//
 		(METHOD_GET_PD_FONTS0 = clz.getDeclaredMethod("getPDFonts")).setAccessible(true);
 		//
 		(METHOD_GET_PD_FONTS1 = clz.getDeclaredMethod("getPDFonts", Field[].class)).setAccessible(true);
+		//
+		(METHOD_SET_BACKGROUND = clz.getDeclaredMethod("setBackground", JComponent.class, Color.class))
+				.setAccessible(true);
 		//
 		// java.lang.reflect.Field
 		//
@@ -410,19 +416,20 @@ class ImagePdfWriterTest {
 	@Test
 	void testAddWatermarkText() {
 		//
-		Assertions.assertDoesNotThrow(() -> addWatermarkText(null, null, null, null, 0));
+		Assertions.assertDoesNotThrow(() -> addWatermarkText(null, null, null, null, 0, null));
 		//
 		final PDPage pdPage = new PDPage();
-		Assertions.assertDoesNotThrow(() -> addWatermarkText(null, pdPage, null, "", 0));
-		Assertions.assertDoesNotThrow(() -> addWatermarkText(new PDDocument(), pdPage, null, "", 0));
-		Assertions.assertDoesNotThrow(() -> addWatermarkText(new PDDocument(), pdPage, PDType1Font.COURIER, "", 0));
+		Assertions.assertDoesNotThrow(() -> addWatermarkText(null, pdPage, null, "", 0, null));
+		Assertions.assertDoesNotThrow(() -> addWatermarkText(new PDDocument(), pdPage, null, "", 0, null));
+		Assertions
+				.assertDoesNotThrow(() -> addWatermarkText(new PDDocument(), pdPage, PDType1Font.COURIER, "", 0, null));
 		//
 	}
 
 	private static void addWatermarkText(final PDDocument doc, final PDPage page, final PDFont font, final String text,
-			final int fontSize) throws Throwable {
+			final int fontSize, final Color fontColor) throws Throwable {
 		try {
-			METHOD_ADD_WATER_MARK_TEXT.invoke(null, doc, page, font, text, fontSize);
+			METHOD_ADD_WATER_MARK_TEXT.invoke(null, doc, page, font, text, fontSize, fontColor);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
@@ -461,6 +468,22 @@ class ImagePdfWriterTest {
 				return (PDFont[]) obj;
 			}
 			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetBackground() {
+		//
+		Assertions.assertDoesNotThrow(() -> setBackground(null, null));
+		Assertions.assertDoesNotThrow(() -> setBackground(new JLabel(), null));
+		//
+	}
+
+	private static void setBackground(final JComponent instance, final Color color) throws Throwable {
+		try {
+			METHOD_SET_BACKGROUND.invoke(null, instance, color);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
