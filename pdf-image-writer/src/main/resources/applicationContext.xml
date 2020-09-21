@@ -29,6 +29,8 @@
 		<property name="ownerPassword" value="${ownerPassword}" />
 		<!-- userPassword -->
 		<property name="userPassword" value="${userPassword}" />
+		<!-- fontColor -->
+		<property name="fontColor" value="${fontColor}" />
 	</bean>
 
 	<bean

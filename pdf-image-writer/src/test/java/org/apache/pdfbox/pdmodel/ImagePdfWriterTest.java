@@ -6,9 +6,11 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.io.File;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,7 +45,7 @@ class ImagePdfWriterTest {
 	private static Method METHOD_GENERATE_FILE_NAME, METHOD_MATCHER, METHOD_REPLACE_ALL, METHOD_KEY_SET,
 			METHOD_TO_ARRAY, METHOD_GET_PAGE_SIZE_MAP, METHOD_CAST, METHOD_GET_SELECTED_ITEM, METHOD_GET_ABSOLUTE_PATH,
 			METHOD_RESIZE_IMAGE, METHOD_DRAW_IMAGE, METHOD_VALUE_OF, METHOD_INT_VALUE, METHOD_ADD_WATER_MARK_TEXT,
-			METHOD_GET_PD_FONTS0, METHOD_GET_PD_FONTS1, METHOD_SET_BACKGROUND = null;
+			METHOD_GET_PD_FONTS0, METHOD_GET_PD_FONTS1, METHOD_SET_BACKGROUND, METHOD_GET_NAME = null;
 
 	@BeforeAll
 	private static void beforeAll() throws ReflectiveOperationException {
@@ -88,6 +90,8 @@ class ImagePdfWriterTest {
 		//
 		(METHOD_SET_BACKGROUND = clz.getDeclaredMethod("setBackground", JComponent.class, Color.class))
 				.setAccessible(true);
+		//
+		(METHOD_GET_NAME = clz.getDeclaredMethod("getName", Member.class)).setAccessible(true);
 		//
 		// java.lang.reflect.Field
 		//
@@ -484,6 +488,50 @@ class ImagePdfWriterTest {
 	private static void setBackground(final JComponent instance, final Color color) throws Throwable {
 		try {
 			METHOD_SET_BACKGROUND.invoke(null, instance, color);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetFontColor() throws ReflectiveOperationException {
+		//
+		final Constructor<ImagePdfWriter> constructor = ImagePdfWriter.class.getDeclaredConstructor();
+		if (constructor != null) {
+			constructor.setAccessible(true);
+		}
+		//
+		final ImagePdfWriter instance = constructor != null ? constructor.newInstance() : null;
+		//
+		Assertions.assertDoesNotThrow(() -> instance.setFontColor(null));
+		Assertions.assertDoesNotThrow(() -> instance.setFontColor(""));
+		Assertions.assertDoesNotThrow(() -> instance.setFontColor(" "));
+		//
+		Assertions.assertDoesNotThrow(() -> instance.setFontColor("*"));
+		Assertions.assertNull(FieldUtils.readDeclaredField(instance, "fontColor", true));
+		//
+		Assertions.assertDoesNotThrow(() -> instance.setFontColor("RED"));
+		Assertions.assertSame(Color.RED, FieldUtils.readDeclaredField(instance, "fontColor", true));
+		//
+		Assertions.assertDoesNotThrow(() -> instance.setFontColor("0"));
+		Assertions.assertEquals(Color.BLACK, FieldUtils.readDeclaredField(instance, "fontColor", true));
+		//
+	}
+
+	@Test
+	void testGetName() throws Throwable {
+		Assertions.assertNull(getName(null));
+	}
+
+	private static String getName(final Member instance) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_NAME.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof String) {
+				return (String) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}

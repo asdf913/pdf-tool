@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +40,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
@@ -147,6 +149,62 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 
 	public void setEncryptionKeyLengths(final List<Integer> encryptionKeyLengths) {
 		this.encryptionKeyLengths = encryptionKeyLengths;
+	}
+
+	public void setFontColor(final String fontColor) {
+		//
+		if (StringUtils.isBlank(fontColor)) {
+			return;
+		}
+		//
+		final List<Field> fields = Arrays.stream(Color.class.getDeclaredFields())
+				.filter(f -> f != null && Modifier.isStatic(f.getModifiers())
+						&& Objects.equals(f.getType(), Color.class) && StringUtils.equals(getName(f), fontColor))
+				.collect(Collectors.toList());
+		//
+		if (fields != null && fields.size() == 1) {
+			//
+			final Field field = fields.get(0);
+			//
+			if (field != null && Objects.equals(field.getType(), Color.class)
+					&& Modifier.isStatic(field.getModifiers())) {
+				//
+				field.setAccessible(true);
+				//
+				try {
+					//
+					final Object obj = field.get(null);
+					//
+					if (obj instanceof Color) {
+						this.fontColor = (Color) obj;
+						return;
+					}
+					//
+				} catch (final IllegalAccessException e) {
+					LOG.error(e.getMessage(), e);
+				}
+				//
+			} // if
+				//
+		} // if
+			//
+		try {
+			//
+			final Integer integer = valueOf(fontColor);
+			//
+			if (integer != null) {
+				this.fontColor = new Color(integer);
+				return;
+			}
+			//
+		} catch (final NumberFormatException e) {
+			LOG.error(e.getMessage(), e);
+		}
+		//
+	}
+
+	private static String getName(final Member instance) {
+		return instance != null ? instance.getName() : null;
 	}
 
 	@Override
@@ -319,7 +377,7 @@ public class ImagePdfWriter implements ActionListener, InitializingBean {
 				if (result == null) {
 					result = new LinkedHashMap<>();
 				}
-				result.put(f.getName(), (PDRectangle) obj);
+				result.put(getName(f), (PDRectangle) obj);
 				//
 			} catch (final IllegalAccessException e) {
 				LOG.error(e.getMessage(), e);
