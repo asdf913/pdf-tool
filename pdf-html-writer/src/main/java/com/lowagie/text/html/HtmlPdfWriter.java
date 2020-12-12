@@ -16,8 +16,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.Dimension2D;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -35,6 +36,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.EventObject;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -72,6 +74,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.text.JTextComponent;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -104,7 +107,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 
 	static {
 		//
-		final Field[] fs = PdfWriter.class.getDeclaredFields();
+		final Field[] fs = getDeclaredFields(PdfWriter.class);
 		//
 		PERMISSIONS = getPermissions(fs);
 		//
@@ -199,11 +202,12 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 	private JFrame jFrame = null;
 
 	private JTextComponent pfUser, pfOwner, tfOutput, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator, tfProducer,
-			tfHeaders = null;
+			tfHeaders, tfHtml = null;
 
 	private JComboBox<String> encryptionTypes = null;
 
-	private AbstractButton btnProperties, btnPermission, btnExecute, btnCopy, cbFullCompression = null;
+	private AbstractButton btnProperties, btnPermission, btnExecuteFile, btnExecuteHtml, btnCopy,
+			cbFullCompression = null;
 
 	private String encryptionType = null;
 
@@ -341,17 +345,21 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 		add(container, panel, wrap);
 		//
 		add(container, new JLabel());
-		add(container, btnExecute = new JButton("Select HTML file"), WRAP);
+		add(container, btnExecuteFile = new JButton("Select HTML file"), WRAP);
+		//
+		add(container, new JLabel("HTML"));
+		add(container, tfHtml = new JTextField());
+		add(container, btnExecuteHtml = new JButton("Execute"), WRAP);
 		//
 		add(container, new JLabel("Output"));
 		add(container, tfOutput = new JTextField());
 		tfOutput.setEditable(false);
 		add(container, btnCopy = new JButton("Copy"), WRAP);
 		//
-		addActionListener(this, btnProperties, btnPermission, btnExecute, btnCopy);
+		addActionListener(this, btnProperties, btnPermission, btnExecuteFile, btnExecuteHtml, btnCopy);
 		//
 		setWidth(PREFERRED_WIDTH, pfOwner, pfUser);
-		setWidth(PREFERRED_WIDTH - (int) getWidth(getPreferredSize(btnCopy), 0), tfOutput);
+		setWidth(PREFERRED_WIDTH - (int) getWidth(getPreferredSize(btnCopy), 0), tfHtml, tfOutput);
 		//
 	}
 
@@ -425,7 +433,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 		//
 		final Object source = getSource(evt);
 		//
-		if (Objects.equals(source, btnExecute)) {
+		if (Objects.equals(source, btnExecuteFile)) {
 			//
 			final JFileChooser jfc = new JFileChooser(".");
 			//
@@ -445,61 +453,13 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 					//
 					JTextComponentUtil.setText(tfOutput, null);
 					//
-					writeHtmlFileToPdfFile(jfc.getSelectedFile(), this::setMetaData, fileOutput);
-					//
-					if (isSelected(cbFullCompression)) {
-						setFullCompression(fileOutput);
-					}
-					//
-					final byte[] userPassword = getBytes(JTextComponentUtil.getText(pfUser));
-					final byte[] ownerPassword = getBytes(JTextComponentUtil.getText(pfOwner));
-					final Integer encryptionType = get(ENCRYPTION_TYPES, getSelectedItem(encryptionTypes));
-					//
-					final boolean passwordSet = length(userPassword, 0) > 0 || length(ownerPassword, 0) > 0;
-					if (passwordSet && encryptionType == null) {
-						JOptionPane.showMessageDialog(null, "Please select an encryption type");
-						return;
-					}
-					//
-					if (encryptionType != null && (length(userPassword, 0) > 0 || length(ownerPassword, 0) > 0)) {
+					if (file != null && file.exists() && file.isFile()) {
 						//
-						final List<Field> fs = getAllowPermissionFields(getClass().getDeclaredFields());
-						Field f = null;
-						ComboBoxModel<?> cb = null;
-						//
-						AllowPermissionField allowPermissionField = null;
-						int[] permission = null;
-						Object selectedItem = null;
-						//
-						for (int i = 0; i < size(fs); i++) {
-							//
-							if ((f = fs.get(i)) == null || !f.isAnnotationPresent(AllowPermissionField.class)
-									|| (allowPermissionField = f.getAnnotation(AllowPermissionField.class)) == null) {
-								continue;
-							}
-							//
-							f.setAccessible(true);
-							//
-							if ((cb = cast(ComboBoxModel.class, f.get(this))) == null) {
-								continue;
-							}
-							//
-							if (Objects.equals(Boolean.TRUE, selectedItem = cb.getSelectedItem())) {
-								if (permission == null) {
-									permission = new int[0];
-								}
-								permission = ArrayUtils.add(permission, allowPermissionField.value());
-							} else if (Objects.equals(Boolean.FALSE, selectedItem)) {
-								if (permission == null) {
-									permission = new int[0];
-								}
-								permission = ArrayUtils.add(permission, 0);
-							}
-							//
-						}
-						//
-						setEncryption(fileOutput, userPassword, ownerPassword,
-								or(ObjectUtils.defaultIfNull(permission, PERMISSIONS)), encryptionType.intValue());
+						FileUtils.writeByteArrayToFile(fileOutput,
+								convertHtmlToPdfByteArray(this, FileUtils.readFileToByteArray(file),
+										isSelected(cbFullCompression), getBytes(JTextComponentUtil.getText(pfUser)),
+										getBytes(JTextComponentUtil.getText(pfOwner)),
+										get(ENCRYPTION_TYPES, getSelectedItem(encryptionTypes))));
 						//
 					}
 					//
@@ -511,6 +471,33 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 				//
 			} // if
 				//
+		} else if (Objects.equals(source, btnExecuteHtml)) {
+			//
+			final StringBuilder fileName = new StringBuilder(StringUtils.defaultString(JOptionPane
+					.showInputDialog("File Name", String.format("%1$tY%1$tm%1$td_%1$tH%1$tM%1$tS.pdf", new Date()))));
+			//
+			if (!StringUtils.endsWith(fileName, ".pdf")) {
+				fileName.append(".pdf");
+			}
+			//
+			final File fileOutput = new File(toString(fileName));
+			//
+			JTextComponentUtil.setText(tfOutput, null);
+			//
+			try {
+				//
+				FileUtils.writeByteArrayToFile(fileOutput,
+						convertHtmlToPdfByteArray(this, getBytes(JTextComponentUtil.getText(tfHtml)),
+								isSelected(cbFullCompression), getBytes(JTextComponentUtil.getText(pfUser)),
+								getBytes(JTextComponentUtil.getText(pfOwner)),
+								get(ENCRYPTION_TYPES, getSelectedItem(encryptionTypes))));
+				//
+				JTextComponentUtil.setText(tfOutput, fileOutput.getAbsolutePath());
+				//
+			} catch (final IOException | IllegalAccessException e) {
+				LOG.error(e.getMessage(), e);
+			}
+			//
 		} else if (Objects.equals(source, btnCopy)) {
 			//
 			setContents(getSystemClipboard(Toolkit.getDefaultToolkit()),
@@ -534,7 +521,7 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 			//
 			final Object selected = getSelectedItem(cbAllowAll);
 			//
-			final List<Field> fs = getAllowPermissionFields(getClass().getDeclaredFields());
+			final List<Field> fs = getAllowPermissionFields(getDeclaredFields(getClass()));
 			//
 			Field f = null;
 			ComboBoxModel<?> cb = null;
@@ -593,6 +580,78 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 			//
 		}
 		//
+	}
+
+	private static byte[] convertHtmlToPdfByteArray(final HtmlPdfWriter instance, final byte[] content,
+			final boolean fullCompression, final byte[] userPassword, final byte[] ownerPassword,
+			final Integer encryptionType) throws IOException, IllegalAccessException {
+		//
+		byte[] bs = content != null && content.length > 0
+				? convertHtmlToPdfByteArray(content, instance != null ? instance::setMetaData : null)
+				: null;
+		//
+		if (fullCompression) {
+			bs = setFullCompression(bs);
+		}
+		//
+		final boolean passwordSet = length(userPassword, 0) > 0 || length(ownerPassword, 0) > 0;
+		if (passwordSet && encryptionType == null) {
+			JOptionPane.showMessageDialog(null, "Please select an encryption type");
+			return null;
+		}
+		//
+		if (encryptionType != null && (length(userPassword, 0) > 0 || length(ownerPassword, 0) > 0)) {
+			//
+			final List<Field> fs = getAllowPermissionFields(getDeclaredFields(getClass(instance)));
+			Field f = null;
+			ComboBoxModel<?> cb = null;
+			//
+			AllowPermissionField allowPermissionField = null;
+			int[] permission = null;
+			Object selectedItem = null;
+			//
+			for (int i = 0; i < size(fs); i++) {
+				//
+				if ((f = fs.get(i)) == null || !f.isAnnotationPresent(AllowPermissionField.class)
+						|| (allowPermissionField = f.getAnnotation(AllowPermissionField.class)) == null) {
+					continue;
+				}
+				//
+				f.setAccessible(true);
+				//
+				if ((cb = cast(ComboBoxModel.class, f.get(instance))) == null) {
+					continue;
+				}
+				//
+				if (Objects.equals(Boolean.TRUE, selectedItem = cb.getSelectedItem())) {
+					if (permission == null) {
+						permission = new int[0];
+					}
+					permission = ArrayUtils.add(permission, allowPermissionField.value());
+				} else if (Objects.equals(Boolean.FALSE, selectedItem)) {
+					if (permission == null) {
+						permission = new int[0];
+					}
+					permission = ArrayUtils.add(permission, 0);
+				}
+				//
+			}
+			//
+			bs = setEncryption(bs, userPassword, ownerPassword, or(ObjectUtils.defaultIfNull(permission, PERMISSIONS)),
+					encryptionType.intValue());
+			//
+		} // if
+			//
+		return bs;
+		//
+	}
+
+	private static Class<?> getClass(final Object instance) {
+		return instance != null ? instance.getClass() : null;
+	}
+
+	private static Field[] getDeclaredFields(final Class<?> instance) {
+		return instance != null ? instance.getDeclaredFields() : null;
 	}
 
 	private static <T> T readValue(final ObjectReader instance, final String input) throws JsonProcessingException {
@@ -844,34 +903,60 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 			//
 	}
 
-	private static void setEncryption(final File file, final byte[] userPassword, final byte[] ownerPassword,
-			final int permission, final int encryptionType) throws IOException {
+	private static byte[] convertHtmlToPdfByteArray(final byte[] input, final Consumer<Document> consumer)
+			throws IOException {
 		//
-		try (final InputStream is = file != null ? new FileInputStream(file) : null;
-				final PdfReader pdfReader = is != null ? new PdfReader(is) : null;
-				final OutputStream os = file != null ? new FileOutputStream(file) : null) {
+		try (final Document document = new Document();
+				final InputStream is = input != null ? new ByteArrayInputStream(input) : null;
+				final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			//
-			final PdfStamper stamper = pdfReader != null ? new PdfStamper(pdfReader, os) : null;
-			if (stamper != null) {
-				stamper.setEncryption(userPassword, ownerPassword, permission, encryptionType);
-				stamper.close();
+			PdfWriter.getInstance(document, baos);
+			//
+			document.open();
+			if (consumer != null) {
+				consumer.accept(document);
 			}
+			//
+			HtmlParser.parse(document, is);
+			//
+			return baos.toByteArray();
 			//
 		} // try
 			//
 	}
 
-	private static void setFullCompression(final File file) throws IOException {
+	private static byte[] setEncryption(final byte[] file, final byte[] userPassword, final byte[] ownerPassword,
+			final int permission, final int encryptionType) throws IOException {
 		//
-		try (final InputStream is = file != null ? new FileInputStream(file) : null;
+		try (final InputStream is = file != null ? new ByteArrayInputStream(file) : null;
 				final PdfReader pdfReader = is != null ? new PdfReader(is) : null;
-				final OutputStream os = file != null ? new FileOutputStream(file) : null) {
+				final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			//
-			final PdfStamper stamper = pdfReader != null ? new PdfStamper(pdfReader, os) : null;
+			final PdfStamper stamper = pdfReader != null ? new PdfStamper(pdfReader, baos) : null;
+			if (stamper != null) {
+				stamper.setEncryption(userPassword, ownerPassword, permission, encryptionType);
+				stamper.close();
+			}
+			//
+			return baos.toByteArray();
+			//
+		} // try
+			//
+	}
+
+	private static byte[] setFullCompression(final byte[] file) throws IOException {
+		//
+		try (final InputStream is = file != null ? new ByteArrayInputStream(file) : null;
+				final PdfReader pdfReader = is != null ? new PdfReader(is) : null;
+				final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+			//
+			final PdfStamper stamper = pdfReader != null ? new PdfStamper(pdfReader, baos) : null;
 			if (stamper != null) {
 				stamper.setFullCompression();
 				stamper.close();
 			}
+			//
+			return baos.toByteArray();
 			//
 		} // try
 			//

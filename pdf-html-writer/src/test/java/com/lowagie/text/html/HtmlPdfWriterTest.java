@@ -57,14 +57,15 @@ class HtmlPdfWriterTest {
 
 	private static Method METHOD_WRITE_HTML_FILE_TO_PDF_FILE, METHOD_TO_STRING, METHOD_ADD_ACTION_LISTENER, METHOD_ADD2,
 			METHOD_ADD3, METHOD_GET_SYSTEM_CLIP_BOARD, METHOD_SET_CONTENTS, METHOD_GET_PERMISSIONS, METHOD_KEY_SET,
-			METHOD_TO_ARRAY, METHOD_SET_WIDTH, METHOD_GET, METHOD_GET_SELECTED_ITEM, METHOD_OR, METHOD_GET_BYTES,
-			METHOD_LENGTH, METHOD_SET_ENCRYPTION, METHOD_SET_META_DATA, METHOD_CREATE_PROPERTIES_DIALOG,
-			METHOD_CREATE_PERMISSION_DIALOG, METHOD_GET_SOURCE, METHOD_PACK, METHOD_SET_VISIBLE, METHOD_GET_WIDTH,
-			METHOD_TEST_AND_GET, METHOD_CAST, METHOD_IS_SELECTED, METHOD_GET_ROW_COUNT, METHOD_ADD_ROW,
-			METHOD_GET_DATA_VECTOR, METHOD_READ_VALUE, METHOD_SET_FULL_COMPRESSION = null;
+			METHOD_TO_ARRAY, METHOD_SET_WIDTH, METHOD_GET, METHOD_GET_SELECTED_ITEM, METHOD_OR, METHOD_CLASS,
+			METHOD_GET_BYTES, METHOD_LENGTH, METHOD_SET_ENCRYPTION, METHOD_SET_META_DATA,
+			METHOD_CREATE_PROPERTIES_DIALOG, METHOD_CREATE_PERMISSION_DIALOG, METHOD_GET_SOURCE, METHOD_PACK,
+			METHOD_SET_VISIBLE, METHOD_GET_WIDTH, METHOD_TEST_AND_GET, METHOD_CAST, METHOD_IS_SELECTED,
+			METHOD_GET_ROW_COUNT, METHOD_ADD_ROW, METHOD_GET_DATA_VECTOR, METHOD_READ_VALUE,
+			METHOD_SET_FULL_COMPRESSION, METHOD_CONVERT_HTML_TO_PDF_BYTE_ARRAY, METHOD_GET_DECLARED_FIELDS = null;
 
 	@BeforeAll
-	static void beforeAll() throws ReflectiveOperationException {
+	private static void beforeAll() throws ReflectiveOperationException {
 		//
 		final Class<?> clz = HtmlPdfWriter.class;
 		//
@@ -100,11 +101,13 @@ class HtmlPdfWriterTest {
 		//
 		(METHOD_OR = clz.getDeclaredMethod("or", int[].class)).setAccessible(true);
 		//
+		(METHOD_CLASS = clz.getDeclaredMethod("getClass", Object.class)).setAccessible(true);
+		//
 		(METHOD_GET_BYTES = clz.getDeclaredMethod("getBytes", String.class)).setAccessible(true);
 		//
 		(METHOD_LENGTH = clz.getDeclaredMethod("length", byte[].class, Integer.TYPE)).setAccessible(true);
 		//
-		(METHOD_SET_ENCRYPTION = clz.getDeclaredMethod("setEncryption", File.class, byte[].class, byte[].class,
+		(METHOD_SET_ENCRYPTION = clz.getDeclaredMethod("setEncryption", byte[].class, byte[].class, byte[].class,
 				Integer.TYPE, Integer.TYPE)).setAccessible(true);
 		//
 		(METHOD_SET_META_DATA = clz.getDeclaredMethod("setMetaData", Document.class)).setAccessible(true);
@@ -136,7 +139,12 @@ class HtmlPdfWriterTest {
 		//
 		(METHOD_READ_VALUE = clz.getDeclaredMethod("readValue", ObjectReader.class, String.class)).setAccessible(true);
 		//
-		(METHOD_SET_FULL_COMPRESSION = clz.getDeclaredMethod("setFullCompression", File.class)).setAccessible(true);
+		(METHOD_SET_FULL_COMPRESSION = clz.getDeclaredMethod("setFullCompression", byte[].class)).setAccessible(true);
+		//
+		(METHOD_CONVERT_HTML_TO_PDF_BYTE_ARRAY = clz.getDeclaredMethod("convertHtmlToPdfByteArray", HtmlPdfWriter.class,
+				byte[].class, Boolean.TYPE, byte[].class, byte[].class, Integer.class)).setAccessible(true);
+		//
+		(METHOD_GET_DECLARED_FIELDS = clz.getDeclaredMethod("getDeclaredFields", Class.class)).setAccessible(true);
 		//
 	}
 
@@ -484,8 +492,26 @@ class HtmlPdfWriterTest {
 		}
 	}
 
-	private static Class<?> getClass(final Object instance) {
-		return instance != null ? instance.getClass() : null;
+	@Test
+	void testGetClass() throws Throwable {
+		//
+		Assertions.assertNull(getClass(null));
+		Assertions.assertSame(String.class, getClass(""));
+		//
+	}
+
+	private static Class<?> getClass(final Object instance) throws Throwable {
+		try {
+			final Object obj = METHOD_CLASS.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof Class) {
+				return (Class) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
 	}
 
 	@Test
@@ -535,7 +561,7 @@ class HtmlPdfWriterTest {
 		Assertions.assertDoesNotThrow(() -> setEncryption(null, null, null, 0, 0));
 	}
 
-	private static void setEncryption(final File file, final byte[] userPassword, final byte[] ownerPassword,
+	private static void setEncryption(final byte[] file, final byte[] userPassword, final byte[] ownerPassword,
 			final int permission, final int encryptionType) throws Throwable {
 		try {
 			METHOD_SET_ENCRYPTION.invoke(null, file, userPassword, ownerPassword, permission, encryptionType);
@@ -798,9 +824,57 @@ class HtmlPdfWriterTest {
 		Assertions.assertDoesNotThrow(() -> setFullCompression(null));
 	}
 
-	private static void setFullCompression(final File file) throws Throwable {
+	private static void setFullCompression(final byte[] file) throws Throwable {
 		try {
 			METHOD_SET_FULL_COMPRESSION.invoke(null, file);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testConvertHtmlToPdfByteArray() throws Throwable {
+		//
+		Assertions.assertNull(convertHtmlToPdfByteArray(null, null, false, null, null, null));
+		Assertions.assertNotNull(convertHtmlToPdfByteArray(null, null, true, null, null, null));
+		//
+		Assertions.assertNull(convertHtmlToPdfByteArray(null, getBytes(""), false, null, null, null));
+		Assertions.assertNotNull(
+				convertHtmlToPdfByteArray(null, getBytes("<html><body> </body></html>"), false, null, null, null));
+		//
+	}
+
+	private static byte[] convertHtmlToPdfByteArray(final HtmlPdfWriter instance, final byte[] content,
+			final boolean fullCompression, final byte[] userPassword, final byte[] ownerPassword,
+			final Integer encryptionType) throws Throwable {
+		try {
+			final Object obj = METHOD_CONVERT_HTML_TO_PDF_BYTE_ARRAY.invoke(null, instance, content, fullCompression,
+					userPassword, ownerPassword, encryptionType);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof byte[]) {
+				return (byte[]) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testGetDeclaredFields() throws Throwable {
+		Assertions.assertNull(getDeclaredFields(null));
+	}
+
+	private static Field[] getDeclaredFields(final Class<?> instance) throws Throwable {
+		try {
+			final Object obj = METHOD_GET_DECLARED_FIELDS.invoke(null, instance);
+			if (obj == null) {
+				return null;
+			} else if (obj instanceof Field[]) {
+				return (Field[]) obj;
+			}
+			throw new Throwable(toString(getClass(obj)));
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
