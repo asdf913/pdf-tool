@@ -78,6 +78,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.function.FailableConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -486,11 +487,12 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 			//
 			try {
 				//
-				FileUtils.writeByteArrayToFile(fileOutput,
+				testAndAccept(Objects::nonNull,
 						convertHtmlToPdfByteArray(this, getBytes(JTextComponentUtil.getText(tfHtml)),
 								isSelected(cbFullCompression), getBytes(JTextComponentUtil.getText(pfUser)),
 								getBytes(JTextComponentUtil.getText(pfOwner)),
-								get(ENCRYPTION_TYPES, getSelectedItem(encryptionTypes))));
+								get(ENCRYPTION_TYPES, getSelectedItem(encryptionTypes))),
+						x -> FileUtils.writeByteArrayToFile(fileOutput, x));
 				//
 				JTextComponentUtil.setText(tfOutput, fileOutput.getAbsolutePath());
 				//
@@ -546,6 +548,13 @@ public class HtmlPdfWriter implements ActionListener, InitializingBean, KeyListe
 				//
 		}
 		//
+	}
+
+	private static <T, E extends Throwable> void testAndAccept(final Predicate<T> predicate, final T value,
+			final FailableConsumer<T, E> consumer) throws E {
+		if (predicate != null && predicate.test(value) && consumer != null) {
+			consumer.accept(value);
+		}
 	}
 
 	@Override

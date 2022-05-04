@@ -38,6 +38,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.text.JTextComponent;
 
+import org.apache.commons.lang3.function.FailableConsumer;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.google.common.base.Predicates;
 import com.google.common.reflect.Reflection;
 import com.lowagie.text.Document;
 import com.lowagie.text.ExceptionConverter;
@@ -62,7 +64,8 @@ class HtmlPdfWriterTest {
 			METHOD_CREATE_PROPERTIES_DIALOG, METHOD_CREATE_PERMISSION_DIALOG, METHOD_GET_SOURCE, METHOD_PACK,
 			METHOD_SET_VISIBLE, METHOD_GET_WIDTH, METHOD_TEST_AND_GET, METHOD_CAST, METHOD_IS_SELECTED,
 			METHOD_GET_ROW_COUNT, METHOD_ADD_ROW, METHOD_GET_DATA_VECTOR, METHOD_READ_VALUE,
-			METHOD_SET_FULL_COMPRESSION, METHOD_CONVERT_HTML_TO_PDF_BYTE_ARRAY, METHOD_GET_DECLARED_FIELDS = null;
+			METHOD_SET_FULL_COMPRESSION, METHOD_CONVERT_HTML_TO_PDF_BYTE_ARRAY, METHOD_GET_DECLARED_FIELDS,
+			METHOD_TEST_AND_ACCEPT = null;
 
 	@BeforeAll
 	private static void beforeAll() throws ReflectiveOperationException {
@@ -145,6 +148,9 @@ class HtmlPdfWriterTest {
 				byte[].class, Boolean.TYPE, byte[].class, byte[].class, Integer.class)).setAccessible(true);
 		//
 		(METHOD_GET_DECLARED_FIELDS = clz.getDeclaredMethod("getDeclaredFields", Class.class)).setAccessible(true);
+		//
+		(METHOD_TEST_AND_ACCEPT = clz.getDeclaredMethod("testAndAccept", Predicate.class, Object.class,
+				FailableConsumer.class)).setAccessible(true);
 		//
 	}
 
@@ -875,6 +881,31 @@ class HtmlPdfWriterTest {
 				return (Field[]) obj;
 			}
 			throw new Throwable(toString(getClass(obj)));
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testTestAndAccept() {
+		//
+		Assertions.assertDoesNotThrow(() -> testAndAccept(null, null, null));
+		//
+		Assertions.assertDoesNotThrow(() -> testAndAccept(Predicates.alwaysFalse(), null, null));
+		//
+		final Predicate<?> alwaysTrue = Predicates.alwaysTrue();
+		//
+		Assertions.assertDoesNotThrow(() -> testAndAccept(alwaysTrue, null, null));
+		//
+		Assertions.assertDoesNotThrow(() -> testAndAccept(alwaysTrue, null, x -> {
+		}));
+		//
+	}
+
+	private static <T, E extends Throwable> void testAndAccept(final Predicate<T> predicate, final T value,
+			final FailableConsumer<T, E> consumer) throws Throwable {
+		try {
+			METHOD_TEST_AND_ACCEPT.invoke(null, predicate, value, consumer);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
