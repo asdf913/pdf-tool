@@ -24,6 +24,8 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
@@ -96,7 +98,7 @@ import com.google.common.collect.Iterables;
 
 import net.miginfocom.swing.MigLayout;
 
-public class DocumentWriter implements ActionListener, InitializingBean {
+public class DocumentWriter implements ActionListener, InitializingBean, ItemListener {
 
 	private static final Logger LOG = Logger.getLogger(toString(DocumentWriter.class));
 
@@ -104,10 +106,12 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private JFrame jFrame = null;
 
-	private JTextComponent tfFontSize, tfMargin, tfText, pfOwner1, pfOwner2, pfUser1, pfUser2, tfFile, tfTitle,
-			tfAuthor, tfSubject, tfKeywords, tfCreator, tfProducer = null;
+	private JTextComponent tfPageSizeWidth, tfPageSizeHeight, tfFontSize, tfMargin, tfText, pfOwner1, pfOwner2, pfUser1,
+			pfUser2, tfFile, tfTitle, tfAuthor, tfSubject, tfKeywords, tfCreator, tfProducer = null;
 
 	private AbstractButton btnColor, btnProperties, btnPermission, btnExecute, btnCopy = null;
+
+	private JComboBox<Object> jcbPageSize = null;
 
 	private ComboBoxModel<Object> cbPageSize = null;
 
@@ -304,18 +308,25 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 
 	private void init(final Container container) {
 		//
-		final String wrap = String.format("span %1$s,%2$s", 3, WRAP);
-		//
 		final JLabel label = new JLabel("Page Size");
 		//
 		add(container, label);
-		add(container,
-				new JComboBox<>(cbPageSize = new DefaultComboBoxModel<>(
-						ArrayUtils.insert(0, (pageSizeMap = getPageSizeMap()).keySet().toArray(), (Object) null))),
-				wrap);
+		//
+		add(container, jcbPageSize = new JComboBox<>(cbPageSize = new DefaultComboBoxModel<>(
+				ArrayUtils.insert(0, (pageSizeMap = getPageSizeMap()).keySet().toArray(), (Object) null))));
+		//
+		add(container, tfPageSizeHeight = new JTextField(), "width 100:100");
+		add(container, new JLabel("*"), "width 10:10");
+		add(container, tfPageSizeWidth = new JTextField(),
+				String.format("width %1$s:%2$s,span %3$s,%4$s", 100, 100, 3, WRAP));
+		//
+		jcbPageSize.addItemListener(this);
+		//
 		if (containsKey(pageSizeMap, pageSize)) {
 			cbPageSize.setSelectedItem(pageSize);
-		}
+		} // if
+			//
+		final String wrap = String.format("span %1$s,%2$s", 6, WRAP);
 		//
 		add(container, new JLabel("Font size"));
 		add(container, tfFontSize = new JTextField(toString(fontSize)), wrap);
@@ -338,12 +349,12 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		add(container, btnColor = new JButton("Color"), wrap);
 		//
 		add(container, new JLabel("Owner Password"));
-		add(container, pfOwner1 = new JPasswordField());
-		add(container, pfOwner2 = new JPasswordField(), wrap);
+		add(container, pfOwner1 = new JPasswordField(), String.format("width %1$s:%2$s", 100, 100));
+		add(container, pfOwner2 = new JPasswordField(), String.format("width %1$s:%2$s,%3$s", 100, 100, WRAP));
 		//
 		add(container, new JLabel("User Password"));
-		add(container, pfUser1 = new JPasswordField());
-		add(container, pfUser2 = new JPasswordField(), wrap);
+		add(container, pfUser1 = new JPasswordField(), String.format("width %1$s:%2$s", 100, 100));
+		add(container, pfUser2 = new JPasswordField(), String.format("width %1$s:%2$s,%3$s", 100, 100, WRAP));
 		//
 		add(container, new JLabel(""));
 		final JPanel panel = new JPanel();
@@ -355,7 +366,7 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		add(container, btnExecute = new JButton("Execute"), wrap);
 		//
 		add(container, new JLabel("File"));
-		add(container, tfFile = new JTextField(), "span 2");
+		add(container, tfFile = new JTextField(), "span 4");
 		add(container, btnCopy = new JButton("Copy"), "wrap");
 		tfFile.setEditable(false);
 		//
@@ -368,20 +379,40 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 		//
 		if (color != null) {
 			setForeground(tfText, color);
-		}
-		//
+		} // if
+			//
 		accept(Arrays.asList(pfOwner1::setText, pfOwner2::setText), ownerPassword);
 		accept(Arrays.asList(pfUser1::setText, pfUser2::setText), userPassword);
 		//
 		addWindowListener(jFrame, new InnerWindowAdapter());
 		//
+		setEditable(tfPageSizeHeight, false);
+		//
+		setEditable(tfPageSizeWidth, false);
+		//
 		try {
+			//
 			add(SystemTray.isSupported() ? SystemTray.getSystemTray() : null,
 					createTrayIcon(createImage("PDF", "TEXT"), toolTip));
+			//
 		} catch (final AWTException e) {
+			//
 			e.printStackTrace();
+			//
+		} // try
+			//
+	}
+
+	private static void setEditable(final JTextComponent instance, final boolean flag) {
+		if (instance != null) {
+			instance.setEditable(flag);
 		}
-		//
+	}
+
+	private static void setText(final JTextComponent instance, final String text) {
+		if (instance != null) {
+			instance.setText(text);
+		}
 	}
 
 	private static synchronized void addWindowListener(final Window instance, final WindowListener windowListener) {
@@ -819,6 +850,33 @@ public class DocumentWriter implements ActionListener, InitializingBean {
 			jFrame.dispose();
 		}
 		//
+	}
+
+	@Override
+	public void itemStateChanged(final ItemEvent evt) {
+		//
+		if (Objects.equals(getSource(evt), jcbPageSize)) {
+			//
+			if (pageSizeMap == null) {
+				pageSizeMap = getPageSizeMap();
+			} // if
+				//
+			setText(tfPageSizeHeight, null);
+			//
+			setText(tfPageSizeWidth, null);
+			//
+			final PDRectangle pdRectangle = get(pageSizeMap, getSelectedItem(cbPageSize));
+			//
+			if (pdRectangle != null) {
+				//
+				setText(tfPageSizeHeight, Float.toString(pdRectangle.getHeight()));
+				//
+				setText(tfPageSizeWidth, Float.toString(pdRectangle.getWidth()));
+				//
+			} // if
+				//
+		} // if
+			//
 	}
 
 	private static Clipboard getSystemClipboard(final Toolkit instance) throws HeadlessException {

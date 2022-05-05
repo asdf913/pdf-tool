@@ -1,5 +1,7 @@
 package org.apache.pdfbox.pdmodel;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FontMetrics;
@@ -41,6 +43,7 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JTextField;
+import javax.swing.text.JTextComponent;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -70,7 +73,7 @@ class DocumentWriterTest {
 			METHOD_COLLECT, METHOD_GET_NAME, METHOD_CONTAINS_KEY, METHOD_GET_SOURCE, METHOD_SET_FORE_GROUND,
 			METHOD_ACCEPT1, METHOD_ACCEPT2, METHOD_TEST_AND_APPLY, METHOD_GET_KEY, METHOD_GET_VALUE,
 			METHOD_SET_SELECTED_ITEM, METHOD_FOR_EACH, METHOD_ADD, METHOD_GET_SYSTEM_CLIP_BOARD,
-			METHOD_GET_FONT_METRICS, METHOD_ADD_WINDOW_LISTENER = null;
+			METHOD_GET_FONT_METRICS, METHOD_ADD_WINDOW_LISTENER, METHOD_SET_EDITABLE, METHOD_SET_TEXT = null;
 
 	@BeforeAll
 	static void beforeAll() throws ReflectiveOperationException {
@@ -171,6 +174,11 @@ class DocumentWriterTest {
 		(METHOD_ADD_WINDOW_LISTENER = clz.getDeclaredMethod("addWindowListener", Window.class, WindowListener.class))
 				.setAccessible(true);
 		//
+		(METHOD_SET_EDITABLE = clz.getDeclaredMethod("setEditable", JTextComponent.class, Boolean.TYPE))
+				.setAccessible(true);
+		//
+		(METHOD_SET_TEXT = clz.getDeclaredMethod("setText", JTextComponent.class, String.class)).setAccessible(true);
+		//
 	}
 
 	private DocumentWriter instance = null;
@@ -226,6 +234,17 @@ class DocumentWriterTest {
 			Assertions.assertDoesNotThrow(() -> instance.actionPerformed(actionEvent));
 			//
 		}
+		//
+	}
+
+	@Test
+	void testItemStateChanged() throws IllegalAccessException {
+		//
+		Assertions.assertDoesNotThrow(() -> instance.itemStateChanged(null));
+		//
+		FieldUtils.writeDeclaredField(instance, "pageSizeMap", Collections.singletonMap(null, PDRectangle.A4), true);
+		//
+		Assertions.assertDoesNotThrow(() -> instance.itemStateChanged(null));
 		//
 	}
 
@@ -992,7 +1011,9 @@ class DocumentWriterTest {
 
 	@Test
 	void testGetFontMetrics() throws Throwable {
+		//
 		Assertions.assertNull(getFontMetrics(null));
+		//
 	}
 
 	private static FontMetrics getFontMetrics(final Graphics instance) throws Throwable {
@@ -1031,14 +1052,44 @@ class DocumentWriterTest {
 		//
 		if (!GraphicsEnvironment.isHeadless()) {
 			Assertions.assertDoesNotThrow(() -> addWindowListener(new Window(null), null));
-		}
-		//
+		} // if
+			//
 	}
 
 	private static synchronized void addWindowListener(final Window instance, final WindowListener windowListener)
 			throws Throwable {
 		try {
 			METHOD_ADD_WINDOW_LISTENER.invoke(null, instance, windowListener);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetEditable() {
+		//
+		Assertions.assertDoesNotThrow(() -> setEditable(null, false));
+		//
+	}
+
+	private static void setEditable(final JTextComponent instance, final boolean flag) throws Throwable {
+		try {
+			METHOD_SET_EDITABLE.invoke(null, instance, flag);
+		} catch (final InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+	}
+
+	@Test
+	void testSetText() {
+		//
+		Assertions.assertDoesNotThrow(() -> setText(new JTextField(), null));
+		//
+	}
+
+	private static void setText(final JTextComponent instance, final String text) throws Throwable {
+		try {
+			METHOD_SET_TEXT.invoke(null, instance, text);
 		} catch (final InvocationTargetException e) {
 			throw e.getTargetException();
 		}
