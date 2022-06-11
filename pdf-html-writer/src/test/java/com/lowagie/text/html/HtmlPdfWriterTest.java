@@ -845,8 +845,9 @@ class HtmlPdfWriterTest {
 		Assertions.assertNotNull(convertHtmlToPdfByteArray(null, null, true, null, null, null));
 		//
 		Assertions.assertNull(convertHtmlToPdfByteArray(null, getBytes(""), false, null, null, null));
-		Assertions.assertNotNull(
-				convertHtmlToPdfByteArray(null, getBytes("<html><body> </body></html>"), false, null, null, null));
+		//
+		Assertions.assertThrows(ExceptionConverter.class, () -> convertHtmlToPdfByteArray(null,
+				getBytes("<html><body> </body></html>"), false, null, null, null));
 		//
 	}
 
