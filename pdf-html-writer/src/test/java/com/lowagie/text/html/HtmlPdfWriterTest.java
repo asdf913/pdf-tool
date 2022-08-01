@@ -68,7 +68,7 @@ class HtmlPdfWriterTest {
 			METHOD_TEST_AND_ACCEPT = null;
 
 	@BeforeAll
-	private static void beforeAll() throws ReflectiveOperationException {
+	static void beforeAll() throws ReflectiveOperationException {
 		//
 		final Class<?> clz = HtmlPdfWriter.class;
 		//

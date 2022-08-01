@@ -48,7 +48,7 @@ class ImagePdfWriterTest {
 			METHOD_GET_PD_FONTS0, METHOD_GET_PD_FONTS1, METHOD_SET_BACKGROUND, METHOD_GET_NAME = null;
 
 	@BeforeAll
-	private static void beforeAll() throws ReflectiveOperationException {
+	static void beforeAll() throws ReflectiveOperationException {
 		//
 		final Class<?> clz = ImagePdfWriter.class;
 		//
